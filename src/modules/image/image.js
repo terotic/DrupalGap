@@ -52,6 +52,7 @@ function image_field_formatter_view(entity_type, entity, field, instance,
 function image_field_widget_form(form, form_state, field, instance, langcode,
   items, delta, element) {
   try {
+
     // Change the item type to a hidden input to hold the file id.
     items[delta].type = 'hidden';
 
@@ -82,6 +83,25 @@ function image_field_widget_form(form, form_state, field, instance, langcode,
       items[delta].children.push({markup: html});
       return; // No further processing required.
     }
+    
+    // Web Apps.
+    if (drupalgap.settings.mode == 'web-app') {
+      items[delta].children.push({
+          markup: _image_field_widget_containers(items[delta].id)
+      });
+      items[delta].children.push({
+          type: 'file',
+          attributes: {
+            onchange:
+              "_image_field_widget_form_web_app_onchange(this, '" +
+                items[delta].id +
+              "')"
+          }
+      });
+      return;
+    }
+    
+    // PHONEGAP...
 
     // Set the default button text, and if a value was provided,
     // overwrite the button text.
@@ -99,13 +119,13 @@ function image_field_widget_form(form, form_state, field, instance, langcode,
     eval('var ' + image_field_source + ' = null;');
     eval('var ' + imagefield_destination_type + ' = null;');
     eval('var ' + imagefield_data + ' = null;');
-    // Build an imagefield widget with PhoneGap. Contains a message
-    // div, an image item, a button to add an image, and a button to browse for
-    // images.
+    
+    // Build an imagefield widget depending on the mode. Contains a message
+    // div, an image item, a button to take a photo (phonegap only), and a
+    // button to browse for images.
     var browse_button_id = items[delta].id + '-browse-button';
     var html = '<div>' +
-      '<div id="' + items[delta].id + '-imagefield-msg"></div>' +
-      '<img id="' + items[delta].id + '-imagefield" style="display: none;" />' +
+      _image_field_widget_containers(items[delta].id) +
       '<a href="#" data-role="button" data-icon="camera" ' +
         'id="' + items[delta].id + '-button">' +
         button_text +
@@ -115,8 +135,10 @@ function image_field_widget_form(form, form_state, field, instance, langcode,
         browse_button_text +
       '</a>' +
     '</div>';
+
     // Open extra javascript declaration.
     html += '<script type="text/javascript">';
+
     // Add device ready listener for PhoneGap camera.
     var event_listener = item_id_base + '_imagefield_ready';
     html += '$("#' + drupalgap_get_page_id(
@@ -130,6 +152,7 @@ function image_field_widget_form(form, form_state, field, instance, langcode,
       image_field_source + ' = navigator.camera.PictureSourceType;' +
       imagefield_destination_type + ' = navigator.camera.DestinationType;' +
     '}';
+
     // Define error callback function.
     var imagefield_error = item_id_base + '_error';
     html += 'function ' + imagefield_error + '(message) {' +
@@ -141,6 +164,7 @@ function image_field_widget_form(form, form_state, field, instance, langcode,
         'drupalgap_alert(message);' +
       '}' +
     '}';
+
     // Define success callback function.
     var imagefield_success = item_id_base + '_success';
     html += 'function ' + imagefield_success + '(imageData) {' +
@@ -149,11 +173,13 @@ function image_field_widget_form(form, form_state, field, instance, langcode,
         'image:imageData, id:"' + items[delta].id + '"' +
        '})' +
     '}';
+
     // Determine image quality.
     var quality = 50;
     if (drupalgap.settings.camera.quality) {
       quality = drupalgap.settings.camera.quality;
     }
+
     // Add click handler for photo button.
     html += '$("#' + items[delta].id + '-button").on("click",function(){' +
       'var photo_options = {' +
@@ -166,6 +192,7 @@ function image_field_widget_form(form, form_state, field, instance, langcode,
         imagefield_error + ', ' +
         'photo_options);' +
     '});';
+
     // Add click handler for browse button.
     html += '$("#' + browse_button_id + '").on("click",function(){' +
       'var browse_photo_options = {' +
@@ -179,12 +206,80 @@ function image_field_widget_form(form, form_state, field, instance, langcode,
         imagefield_error + ', ' +
         'browse_photo_options);' +
     '});';
+
     // Close extra javascript declaration.
     html += '</script>';
+
     // Add html to the item's children.
     items[delta].children.push({markup: html});
   }
   catch (error) { console.log('image_field_widget_form - ' + error); }
+}
+
+/**
+ * The onchange handler for a web app's image field widget form.
+ */
+function _image_field_widget_form_web_app_onchange(file, id) {
+  try {
+    _image_field_place_into_widget({
+        id: id,
+        file: file
+    });
+  }
+  catch (error) {
+    console.log('_image_field_widget_form_web_app_onchange - ' + error);
+  }
+}
+
+/**
+ *
+ */
+function _image_field_widget_containers(id) {
+  try {
+    return '<div id="' + id + '-imagefield-msg"></div>' +
+    '<img id="' + id + '-imagefield" style="display: none;" />';
+  }
+  catch (error) { console.log('_image_field_widget_containers - ' + error); }
+}
+
+/**
+ *
+ */
+function _image_field_place_into_widget(options) {
+  try {
+    // Show the captured photo as a thumbnail. When the photo is loaded, resize
+    // it to fit the content area, then show it.
+    var image_element_id = options.id + '-imagefield';
+    var image = document.getElementById(image_element_id);
+    if (drupalgap.settings.mode == 'web-app') {
+      // Build the file reader to base 64 encode the image file data.
+      var FR= new FileReader();
+      FR.onload = function(e) {
+        image.src = e.target.result;
+      };
+      FR.readAsDataURL(options.file.files[0]);
+    }
+    else {
+      // With phonegap we already have the base 64 encoded image, place it into
+      // the image element on the page.
+      image.src = 'data:image/jpeg;base64,' +
+        image_phonegap_camera_options[options.field_name][0].image;
+    }
+    image.onload = function() {
+      var width = this.width;
+      var height = this.height;
+      var max_width = drupalgap_max_width();
+      if (width >= max_width) {
+        var ratio = width / max_width;
+        var new_width = width / ratio;
+        var new_height = height / ratio;
+        image.width = new_width;
+        image.height = new_height;
+      }
+      $('#' + image_element_id).show();
+    };
+  }
+  catch (error) { console.log('_image_field_place_into_widget - ' + error); }
 }
 
 /**
@@ -305,23 +400,10 @@ function _image_phonegap_camera_getPicture_success(options) {
     // Hide the 'Add image' button and show the 'Upload' button.
     //$('#' + options.id + '-button').hide();
     //$('#' + options.id + '_upload').show();
+    
+    // Show the image to the user.
+    _image_field_place_into_widget(options);
 
-    // Show the captured photo as a thumbnail. When the photo is loaded, resize
-    // it to fit the content area, then show it.
-    var image_element_id = options.id + '-imagefield';
-    var image = document.getElementById(image_element_id);
-    image.src = 'data:image/jpeg;base64,' +
-      image_phonegap_camera_options[options.field_name][0].image;
-    image.onload = function() {
-      var width = this.width;
-      var height = this.height;
-      var ratio = width / drupalgap_max_width();
-      var new_width = width / ratio;
-      var new_height = height / ratio;
-      image.width = new_width;
-      image.height = new_height;
-      $('#' + image_element_id).show();
-    };
   }
   catch (error) {
     console.log('_image_phonegap_camera_getPicture_success - ' + error);
@@ -341,18 +423,28 @@ function _image_field_form_process(form, form_state, options) {
     var lng = language_default();
     var processed_an_image = false;
     $.each(form.image_fields, function(index, name) {
-      // Skip empty images.
-      if (!image_phonegap_camera_options[name][0]) { return false; }
-      // Skip image fields that already have their file id set.
-      if (form_state.values[name][lng][0] != '') { return false; }
+        dpm('processing image... ' + name);
+        var base64 = null;
+        if (drupalgap.settings.mode == 'web-app') {
+          return false;
+        }
+        else {
+          // Skip empty images.
+          if (!image_phonegap_camera_options[name][0]) { return false; }
+          // Skip image fields that already have their file id set.
+          if (form_state.values[name][lng][0] != '') { return false; }
+          base64 = image_phonegap_camera_options[name][0].image;
+        }
+      
       // Create a unique file name using the UTC integer value.
       var d = new Date();
       var image_file_name = Drupal.user.uid + '_' + d.valueOf() + '.jpg';
+
       // Build the data for the file create resource. If it's private, adjust
       // the filepath.
       var file = {
         file: {
-          file: image_phonegap_camera_options[name][0].image,
+          file: base64,
           filename: image_file_name,
           filepath: 'public://' + image_file_name
         }
@@ -360,6 +452,7 @@ function _image_field_form_process(form, form_state, options) {
       if (!empty(Drupal.settings.file_private_path)) {
         file.file.filepath = 'private://' + image_file_name;
       }
+
       // Change the loader mode to saving, and save the file.
       drupalgap.loader = 'saving';
       processed_an_image = true;
@@ -379,6 +472,7 @@ function _image_field_form_process(form, form_state, options) {
           }
       });
     });
+
     // If no images were processed, we need to continue onward anyway.
     if (!processed_an_image && options.success) { options.success(); }
   }
