@@ -74,15 +74,15 @@ function user_register_form(form, form_state) {
     form.bundle = null;
     form.elements.name = {
       type: 'textfield',
-      title: 'Username',
+      title: 'Käyttäjätunnus',
       title_placeholder: true,
       required: true,
-      description: 'Spaces are allowed; punctuation is not allowed except ' +
-        'for periods, hyphens, apostrophes, and underscores.'
+      description: 'Välilyönnit sallittuja. Välimerkit eivät ' +
+        'paitsi piste, viiva, kaksoispiste ja alaviiva.'
     };
     form.elements.mail = {
       type: 'email',
-      title: 'E-mail address',
+      title: 'Sähköpostiosoite',
       title_placeholder: true,
       required: true
     };
@@ -91,19 +91,19 @@ function user_register_form(form, form_state) {
     if (!drupalgap.site_settings.user_email_verification) {
       form.elements.conf_mail = {
         type: 'email',
-        title: 'Confirm e-mail address',
+        title: 'Sähköpostiosoite uudelleen',
         title_placeholder: true,
         required: true
       };
       form.elements.pass = {
         type: 'password',
-        title: 'Password',
+        title: 'Salasana',
         title_placeholder: true,
         required: true
       };
       form.elements.pass2 = {
         type: 'password',
-        title: 'Confirm password',
+        title: 'Salasana uudelleen',
         title_placeholder: true,
         required: true
       };
@@ -113,7 +113,7 @@ function user_register_form(form, form_state) {
     drupalgap_field_info_instances_add_to_form('user', null, form, null);
     // Add registration messages to form.
     form.user_register = {
-      'user_mail_register_no_approval_required_body': 'Registration complete!',
+      'user_mail_register_no_approval_required_body': 'Rekisteröinti suoritettu!',
       'user_mail_register_pending_approval_required_body':
         'Registration complete, waiting for administrator approval.',
       'user_mail_register_email_verification_body':
@@ -126,7 +126,7 @@ function user_register_form(form, form_state) {
     // Add submit button.
     form.elements.submit = {
       'type': 'submit',
-      'value': 'Create new account'
+      'value': 'Rekisteröidy käyttäjäksi'
     };
     return form;
   }
@@ -143,12 +143,12 @@ function user_register_form_validate(form, form_state) {
     // If e-mail verification is not required, make sure the passwords match.
     if (!drupalgap.site_settings.user_email_verification &&
       form_state.values.pass != form_state.values.pass2) {
-      drupalgap_form_set_error('pass', 'Passwords do not match!');
+      drupalgap_form_set_error('pass', 'Salasanat eivät täsmää!');
     }
     // If there are two e-mail address fields on the form, make sure they match.
     if (!empty(form_state.values.mail) && !empty(form_state.values.conf_mail) &&
       form_state.values.mail != form_state.values.conf_mail
-    ) { drupalgap_form_set_error('mail', 'E-mail addresses do not match!'); }
+    ) { drupalgap_form_set_error('mail', 'Sähköpostiosoitteet eivät täsmää!'); }
   }
   catch (error) {
     console.log('user_register_form_validate - ' + error);
