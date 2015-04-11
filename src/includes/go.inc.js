@@ -356,7 +356,7 @@ function _drupalgap_back_exit(button) {
   catch (error) { console.log('_drupalgap_back_exit - ' + error); }
 }
 
-$(window).on("navigate", function (event, data) {
+$(window).on('navigate', function(event, data) {
 
     // In web-app mode, clicking the back button on your browser (or Android
     // device browser), the drupalgap path doesn't get updated for some

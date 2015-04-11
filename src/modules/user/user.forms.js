@@ -10,13 +10,13 @@ function user_login_form(form, form_state) {
     form.bundle = null;
     form.elements.name = {
       type: 'textfield',
-      title: 'Username',
+      title: _('Username'),
       title_placeholder: true,
       required: true
     };
     form.elements.pass = {
       type: 'password',
-      title: 'Password',
+      title: _('Password'),
       title_placeholder: true,
       required: true,
       attributes: {
@@ -29,14 +29,14 @@ function user_login_form(form, form_state) {
     };
     if (user_register_access()) {
       form.buttons['create_new_account'] = {
-        title: 'Create new account',
+        title: _('Create new account'),
         attributes: {
           onclick: "drupalgap_goto('user/register')"
         }
       };
     }
     form.buttons['forgot_password'] = {
-      title: 'Request new password',
+      title: _('Request new password'),
         attributes: {
           onclick: "drupalgap_goto('user/password')"
         }
@@ -74,15 +74,15 @@ function user_register_form(form, form_state) {
     form.bundle = null;
     form.elements.name = {
       type: 'textfield',
-      title: 'Käyttäjätunnus',
+      title: _('Username'),
       title_placeholder: true,
       required: true,
-      description: 'Välilyönnit sallittuja. Välimerkit eivät ' +
-        'paitsi piste, viiva, kaksoispiste ja alaviiva.'
+      description: _('Spaces are allowed; punctuation is not allowed except ') +
+        _('for periods, hyphens, apostrophes, and underscores.')
     };
     form.elements.mail = {
       type: 'email',
-      title: 'Sähköpostiosoite',
+      title: _('E-mail address'),
       title_placeholder: true,
       required: true
     };
@@ -91,19 +91,19 @@ function user_register_form(form, form_state) {
     if (!drupalgap.site_settings.user_email_verification) {
       form.elements.conf_mail = {
         type: 'email',
-        title: 'Sähköpostiosoite uudelleen',
+        title: _('Confirm e-mail address'),
         title_placeholder: true,
         required: true
       };
       form.elements.pass = {
         type: 'password',
-        title: 'Salasana',
+        title: _('Password'),
         title_placeholder: true,
         required: true
       };
       form.elements.pass2 = {
         type: 'password',
-        title: 'Salasana uudelleen',
+        title: _('Confirm password'),
         title_placeholder: true,
         required: true
       };
@@ -113,11 +113,11 @@ function user_register_form(form, form_state) {
     drupalgap_field_info_instances_add_to_form('user', null, form, null);
     // Add registration messages to form.
     form.user_register = {
-      'user_mail_register_no_approval_required_body': 'Rekisteröinti suoritettu!',
+      'user_mail_register_no_approval_required_body': _('Registration complete!'),
       'user_mail_register_pending_approval_required_body':
-        'Registration complete, waiting for administrator approval.',
+        _('Registration complete, waiting for administrator approval.'),
       'user_mail_register_email_verification_body':
-        'Registration complete, check your e-mail inbox to verify the account.'
+        _('Registration complete, check your e-mail inbox to verify the account.')
     };
     // Set the auto login boolean. This only happens when the site's account
     // settings require no e-mail verification. Others can stop this from
@@ -126,7 +126,7 @@ function user_register_form(form, form_state) {
     // Add submit button.
     form.elements.submit = {
       'type': 'submit',
-      'value': 'Rekisteröidy käyttäjäksi'
+      'value': 'Create new account'
     };
     return form;
   }
@@ -143,12 +143,12 @@ function user_register_form_validate(form, form_state) {
     // If e-mail verification is not required, make sure the passwords match.
     if (!drupalgap.site_settings.user_email_verification &&
       form_state.values.pass != form_state.values.pass2) {
-      drupalgap_form_set_error('pass', 'Salasanat eivät täsmää!');
+      drupalgap_form_set_error('pass', _('Passwords do not match!'));
     }
     // If there are two e-mail address fields on the form, make sure they match.
     if (!empty(form_state.values.mail) && !empty(form_state.values.conf_mail) &&
       form_state.values.mail != form_state.values.conf_mail
-    ) { drupalgap_form_set_error('mail', 'Sähköpostiosoitteet eivät täsmää!'); }
+    ) { drupalgap_form_set_error('mail', _('E-mail addresses do not match!')); }
   }
   catch (error) {
     console.log('user_register_form_validate - ' + error);
@@ -234,21 +234,21 @@ function user_profile_form(form, form_state, account) {
     // password field no matter what.
     if (Drupal.user.uid == account.uid) {
       form.elements.current_pass = {
-        'title': 'Current password',
+        'title': _('Current password'),
         'type': 'password',
-        'description': 'Enter your current password to change the E-mail ' +
-          'address or Password.'
+        'description': _('Enter your current password to change the E-mail ') +
+          _('address or Password.')
       };
     }
     form.elements.pass_pass1 = {
-      'title': 'Password',
+      'title': _('Password'),
       'type': 'password'
     };
     form.elements.pass_pass2 = {
-      'title': 'Confirm password',
+      'title': _('Confirm password'),
       'type': 'password',
-      'description': 'To change the current user password, enter the new ' +
-        'password in both fields.'
+      'description': _('To change the current user password, enter the new ') +
+        _('password in both fields.')
     };
 
     // Add submit to form.
@@ -259,7 +259,7 @@ function user_profile_form(form, form_state, account) {
 
     // Add cancel button to form.
     form.buttons['cancel'] = {
-      'title': 'Cancel',
+      'title': _('Cancel'),
       attributes: {
         onclick: 'javascript:drupalgap_back();'
       }
@@ -292,7 +292,7 @@ function user_pass_form(form, form_state) {
   try {
     form.elements['name'] = {
       type: 'textfield',
-      title: 'Username or e-mail address',
+      title: _('Username or e-mail address'),
       required: true,
       attributes: {
         onkeypress: "drupalgap_form_onkeypress('" + form.id + "')"
@@ -318,11 +318,11 @@ function user_pass_form_submit(form, form_state) {
         success: function(result) {
           if (result[0]) {
             var msg =
-              'Further instructions have been sent to your e-mail address.';
+              _('Further instructions have been sent to your e-mail address.');
             drupalgap_set_message(msg);
           }
           else {
-            var msg = 'There was a problem sending an e-mail to your address.';
+            var msg = _('There was a problem sending an e-mail to your address.');
             drupalgap_set_message(msg, 'warning');
           }
           drupalgap_goto('user/login');
@@ -331,4 +331,3 @@ function user_pass_form_submit(form, form_state) {
   }
   catch (error) { console.log('user_pass_form_submit - ' + error); }
 }
-

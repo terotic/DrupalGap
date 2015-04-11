@@ -33,6 +33,7 @@ lintfiles = src/drupalgap.js\
 				src/modules/user/user.forms.js\
 				src/modules/taxonomy/taxonomy.js\
 				src/modules/views/views.js\
+                src/modules/translate/translate.js\
 
 files =	src/drupalgap.js\
 				src/includes/block.inc.js\
@@ -61,14 +62,15 @@ files =	src/drupalgap.js\
 				src/modules/user/user.forms.js\
 				src/modules/taxonomy/taxonomy.js\
 				src/modules/views/views.js\
+                src/modules/translate/translate.js\
 
-.DEFAULT_GOAL := all
+#.DEFAULT_GOAL := all
 
-all: jslint js
+#all: jslint js
 
 # Perform a jsLint on all the files.
-jslint: ${lintfiles}
-																gjslint $^
+#jslint: ${lintfiles}
+#																gjslint $^
 
 # Create an aggregated js file and a compressed js file.
 js: ${files}

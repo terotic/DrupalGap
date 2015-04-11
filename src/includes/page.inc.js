@@ -71,7 +71,7 @@ function _GET() {
       // If the id hasn't been instantiated, do so. Then set the key and value
       // onto it.
       if (typeof _dg_GET[id] === 'undefined') { _dg_GET[id] = {}; }
-      if (value) {  _dg_GET[id][key] = value; }
+      if (value) { _dg_GET[id][key] = value; }
 
     }
     return null;

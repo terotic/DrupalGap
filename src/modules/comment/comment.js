@@ -5,7 +5,7 @@
 function comment_menu() {
     var items = {
       'comment/%': {
-        title: 'Comment',
+        title: _('Comment'),
         page_callback: 'comment_page_view',
         page_arguments: [1],
         pageshow: 'comment_page_view_pageshow',
@@ -13,12 +13,12 @@ function comment_menu() {
         title_arguments: [1]
       },
       'comment/%/view': {
-        title: 'View',
+        title: _('View'),
         type: 'MENU_DEFAULT_LOCAL_TASK',
         weight: -10
       },
       'comment/%/edit': {
-        title: 'Edit',
+        title: _('Edit'),
         page_callback: 'entity_page_edit',
         pageshow: 'entity_page_edit_pageshow',
         page_arguments: ['comment_edit', 'comment', 1],
@@ -188,14 +188,14 @@ function comment_edit(form, form_state, comment, node) {
     // Add submit to form.
     form.elements.submit = {
       'type': 'submit',
-      'value': 'Save'
+      'value': _('Save')
     };
 
     // Add cancel and delete button to form if we're editing a comment. Also
     // figure out a form title to use in the prefix.
-    var form_title = 'Add comment';
+    var form_title = _('Add comment');
     if (comment && comment.cid) {
-      form_title = 'Edit comment';
+      form_title = _('Edit comment');
       form.buttons['cancel'] = drupalgap_form_cancel_button();
       form.buttons['delete'] =
         drupalgap_entity_edit_form_delete_button('comment', comment.cid);
@@ -251,7 +251,7 @@ function comment_services_postprocess(options, result) {
                     $(container).append(
                       theme('comment', { comment: comment })
                     ).trigger('create');
-                    scrollToElement('#' + container_id + ' :last-child', 500);
+                    scrollToElemen_('#' + container_id + ' :last-child', 500);
                     var form_selector = '#' + drupalgap_get_page_id() +
                       ' #comment_edit';
                     drupalgap_form_clear(form_selector);
@@ -281,7 +281,7 @@ function theme_comments(variables) {
     var html = '<div ' + drupalgap_attributes(variables.attributes) + '>';
     // Show a comments title if there are any comments.
     if (variables.node.comment_count > 0) {
-      html += '<h2 class="comments-title">Comments</h2>';
+      html += _('<h2 class="comments-title">Comments</h2>');
     }
     // If the comments are already rendered, show them.
     if (variables.comments) { html += variables.comments; }
@@ -318,7 +318,7 @@ function theme_comment(variables) {
     }
     // Comment date.
     var created = new Date(comment.created * 1000);
-    created = created.toLocaleDateString() + ' at ' +
+    created = created.toLocaleDateString() + _(' at ') +
       created.toLocaleTimeString();
     // Append comment extra fields and content. The user info will be rendered
     // as a list item link.
@@ -338,7 +338,7 @@ function theme_comment(variables) {
       (user_access('edit own comments') && comment.uid == Drupal.user.uid)
     ) {
       html += theme('button_link', {
-          text: 'Edit',
+          text: _('Edit'),
           path: 'comment/' + comment.cid + '/edit',
           attributes: {
             'data-icon': 'gear'

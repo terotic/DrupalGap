@@ -550,6 +550,33 @@ function drupalgap_confirm(message) {
 }
 
 /**
+ * Show a non intrusive alert message. You may optionally pass in an
+ * integer value as the second argument to specify how many milliseconds
+ * to wait before closing the message. Likewise, you can pass in a
+ * third argument to specify how long to wait before opening the
+ * message.
+ * @param {html} string - The html to display.
+ */
+function drupalgap_toast(html) {
+  try {
+    var open = arguments[2] ? arguments[2] : 1;
+    var close = arguments[1] ? arguments[1] : 420;
+    setInterval(function() {
+        $.mobile.loading('show', {
+            textVisible: true,
+            html: html
+        });
+        setInterval(function() {
+            $.mobile.loading().hide();
+        }, close);
+    }, open);
+  }
+  catch (error) {
+    console.log('drupalgap_toast - ' + error);
+  }
+}
+
+/**
  * Rounds up all blocks defined by hook_block_info and places them in the
  * drupalgap.blocks array.
  */
@@ -4007,7 +4034,7 @@ function _drupalgap_back_exit(button) {
   catch (error) { console.log('_drupalgap_back_exit - ' + error); }
 }
 
-$(window).on("navigate", function (event, data) {
+$(window).on('navigate', function(event, data) {
 
     // In web-app mode, clicking the back button on your browser (or Android
     // device browser), the drupalgap path doesn't get updated for some
@@ -4093,7 +4120,7 @@ function _GET() {
       // If the id hasn't been instantiated, do so. Then set the key and value
       // onto it.
       if (typeof _dg_GET[id] === 'undefined') { _dg_GET[id] = {}; }
-      if (value) {  _dg_GET[id][key] = value; }
+      if (value) { _dg_GET[id][key] = value; }
 
     }
     return null;
@@ -6335,7 +6362,7 @@ function _drupalgap_page_title_pageshow_success(title) {
 function comment_menu() {
     var items = {
       'comment/%': {
-        title: 'Comment',
+        title: _('Comment'),
         page_callback: 'comment_page_view',
         page_arguments: [1],
         pageshow: 'comment_page_view_pageshow',
@@ -6343,12 +6370,12 @@ function comment_menu() {
         title_arguments: [1]
       },
       'comment/%/view': {
-        title: 'View',
+        title: _('View'),
         type: 'MENU_DEFAULT_LOCAL_TASK',
         weight: -10
       },
       'comment/%/edit': {
-        title: 'Edit',
+        title: _('Edit'),
         page_callback: 'entity_page_edit',
         pageshow: 'entity_page_edit_pageshow',
         page_arguments: ['comment_edit', 'comment', 1],
@@ -6518,14 +6545,14 @@ function comment_edit(form, form_state, comment, node) {
     // Add submit to form.
     form.elements.submit = {
       'type': 'submit',
-      'value': 'Save'
+      'value': _('Save')
     };
 
     // Add cancel and delete button to form if we're editing a comment. Also
     // figure out a form title to use in the prefix.
-    var form_title = 'Add comment';
+    var form_title = _('Add comment');
     if (comment && comment.cid) {
-      form_title = 'Edit comment';
+      form_title = _('Edit comment');
       form.buttons['cancel'] = drupalgap_form_cancel_button();
       form.buttons['delete'] =
         drupalgap_entity_edit_form_delete_button('comment', comment.cid);
@@ -6581,7 +6608,7 @@ function comment_services_postprocess(options, result) {
                     $(container).append(
                       theme('comment', { comment: comment })
                     ).trigger('create');
-                    scrollToElement('#' + container_id + ' :last-child', 500);
+                    scrollToElemen_('#' + container_id + ' :last-child', 500);
                     var form_selector = '#' + drupalgap_get_page_id() +
                       ' #comment_edit';
                     drupalgap_form_clear(form_selector);
@@ -6611,7 +6638,7 @@ function theme_comments(variables) {
     var html = '<div ' + drupalgap_attributes(variables.attributes) + '>';
     // Show a comments title if there are any comments.
     if (variables.node.comment_count > 0) {
-      html += '<h2 class="comments-title">Comments</h2>';
+      html += _('<h2 class="comments-title">Comments</h2>');
     }
     // If the comments are already rendered, show them.
     if (variables.comments) { html += variables.comments; }
@@ -6648,7 +6675,7 @@ function theme_comment(variables) {
     }
     // Comment date.
     var created = new Date(comment.created * 1000);
-    created = created.toLocaleDateString() + ' at ' +
+    created = created.toLocaleDateString() + _(' at ') +
       created.toLocaleTimeString();
     // Append comment extra fields and content. The user info will be rendered
     // as a list item link.
@@ -6668,7 +6695,7 @@ function theme_comment(variables) {
       (user_access('edit own comments') && comment.uid == Drupal.user.uid)
     ) {
       html += theme('button_link', {
-          text: 'Edit',
+          text: _('Edit'),
           path: 'comment/' + comment.cid + '/edit',
           attributes: {
             'data-icon': 'gear'
@@ -11034,7 +11061,7 @@ function user_listing() {
     var content = {
       'user_listing': {
         'theme': 'jqm_item_list',
-        'title': 'Users',
+        'title': _('Users'),
         'items': [],
         'attributes': {'id': 'user_listing_items'}
       }
@@ -11070,7 +11097,7 @@ function user_listing_pageshow() {
  * @return {String}
  */
 function user_logout_callback() {
-  return '<p>Logging out...</p>';
+  return _('<p>Logging out...</p>');
 }
 
 /**
@@ -11098,26 +11125,26 @@ function user_menu() {
         'page_callback': 'user_page'
       },
       'user/login': {
-        'title': 'Login',
+        'title': _('Login'),
         'page_callback': 'drupalgap_get_form',
         'page_arguments': ['user_login_form'],
         options: {reloadPage: true}
       },
       'user/logout': {
-        'title': 'Logout',
+        'title': _('Logout'),
         'page_callback': 'user_logout_callback',
         'pagechange': 'user_logout_pagechange',
         options: {reloadPage: true}
       },
       'user/register': {
-        'title': 'Register',
+        'title': _('Register'),
         'page_callback': 'drupalgap_get_form',
         'page_arguments': ['user_register_form'],
         'access_callback': 'user_register_access',
         options: {reloadPage: true}
       },
       'user/%': {
-        title: 'My account',
+        title: _('My account'),
         title_callback: 'user_view_title',
         title_arguments: [1],
         page_callback: 'user_view',
@@ -11125,12 +11152,12 @@ function user_menu() {
         page_arguments: [1]
       },
       'user/%/view': {
-        'title': 'View',
+        'title': _('View'),
         'type': 'MENU_DEFAULT_LOCAL_TASK',
         'weight': -10
       },
       'user/%/edit': {
-        'title': 'Edit',
+        'title': _('Edit'),
         'page_callback': 'entity_page_edit',
         'pageshow': 'entity_page_edit_pageshow',
         'page_arguments': ['user_profile_form', 'user', 1],
@@ -11141,14 +11168,14 @@ function user_menu() {
         options: {reloadPage: true}
       },
       'user-listing': {
-        'title': 'Users',
+        'title': _('Users'),
         'page_callback': 'user_listing',
         'access_arguments': ['access user profiles'],
         'pageshow': 'user_listing_pageshow'
       }
     };
     items['user/password'] = {
-      title: 'Request new password',
+      title: _('Request new password'),
       page_callback: 'drupalgap_get_form',
       page_arguments: ['user_pass_form']
     };
@@ -11268,8 +11295,8 @@ function user_view_pageshow(uid) {
               'name': {'markup': account.name},
               'created': {
                 markup:
-                '<div class="user_profile_history"><h3>History</h3>' +
-                '<dl><dt>Member since</td></dt><dd>' +
+                _('<div class="user_profile_history"><h3>History</h3>') +
+                _('<dl><dt>Member since</td></dt><dd>') +
                   (new Date(parseInt(account.created) * 1000)).toDateString() +
                 '</dd></div>'
               }
@@ -11338,7 +11365,6 @@ function drupalgap_user_has_role(role) {
   }
   catch (error) { console.log('drupalgap_user_has_role - ' + error); }
 }
-
 /**
  * The user login form.
  * @param {Object} form
@@ -11351,13 +11377,13 @@ function user_login_form(form, form_state) {
     form.bundle = null;
     form.elements.name = {
       type: 'textfield',
-      title: 'Username',
+      title: _('Username'),
       title_placeholder: true,
       required: true
     };
     form.elements.pass = {
       type: 'password',
-      title: 'Password',
+      title: _('Password'),
       title_placeholder: true,
       required: true,
       attributes: {
@@ -11370,14 +11396,14 @@ function user_login_form(form, form_state) {
     };
     if (user_register_access()) {
       form.buttons['create_new_account'] = {
-        title: 'Create new account',
+        title: _('Create new account'),
         attributes: {
           onclick: "drupalgap_goto('user/register')"
         }
       };
     }
     form.buttons['forgot_password'] = {
-      title: 'Request new password',
+      title: _('Request new password'),
         attributes: {
           onclick: "drupalgap_goto('user/password')"
         }
@@ -11415,15 +11441,15 @@ function user_register_form(form, form_state) {
     form.bundle = null;
     form.elements.name = {
       type: 'textfield',
-      title: 'Username',
+      title: _('Username'),
       title_placeholder: true,
       required: true,
-      description: 'Spaces are allowed; punctuation is not allowed except ' +
-        'for periods, hyphens, apostrophes, and underscores.'
+      description: _('Spaces are allowed; punctuation is not allowed except ') +
+        _('for periods, hyphens, apostrophes, and underscores.')
     };
     form.elements.mail = {
       type: 'email',
-      title: 'E-mail address',
+      title: _('E-mail address'),
       title_placeholder: true,
       required: true
     };
@@ -11432,19 +11458,19 @@ function user_register_form(form, form_state) {
     if (!drupalgap.site_settings.user_email_verification) {
       form.elements.conf_mail = {
         type: 'email',
-        title: 'Confirm e-mail address',
+        title: _('Confirm e-mail address'),
         title_placeholder: true,
         required: true
       };
       form.elements.pass = {
         type: 'password',
-        title: 'Password',
+        title: _('Password'),
         title_placeholder: true,
         required: true
       };
       form.elements.pass2 = {
         type: 'password',
-        title: 'Confirm password',
+        title: _('Confirm password'),
         title_placeholder: true,
         required: true
       };
@@ -11454,11 +11480,11 @@ function user_register_form(form, form_state) {
     drupalgap_field_info_instances_add_to_form('user', null, form, null);
     // Add registration messages to form.
     form.user_register = {
-      'user_mail_register_no_approval_required_body': 'Registration complete!',
+      'user_mail_register_no_approval_required_body': _('Registration complete!'),
       'user_mail_register_pending_approval_required_body':
-        'Registration complete, waiting for administrator approval.',
+        _('Registration complete, waiting for administrator approval.'),
       'user_mail_register_email_verification_body':
-        'Registration complete, check your e-mail inbox to verify the account.'
+        _('Registration complete, check your e-mail inbox to verify the account.')
     };
     // Set the auto login boolean. This only happens when the site's account
     // settings require no e-mail verification. Others can stop this from
@@ -11484,12 +11510,12 @@ function user_register_form_validate(form, form_state) {
     // If e-mail verification is not required, make sure the passwords match.
     if (!drupalgap.site_settings.user_email_verification &&
       form_state.values.pass != form_state.values.pass2) {
-      drupalgap_form_set_error('pass', 'Passwords do not match!');
+      drupalgap_form_set_error('pass', _('Passwords do not match!'));
     }
     // If there are two e-mail address fields on the form, make sure they match.
     if (!empty(form_state.values.mail) && !empty(form_state.values.conf_mail) &&
       form_state.values.mail != form_state.values.conf_mail
-    ) { drupalgap_form_set_error('mail', 'E-mail addresses do not match!'); }
+    ) { drupalgap_form_set_error('mail', _('E-mail addresses do not match!')); }
   }
   catch (error) {
     console.log('user_register_form_validate - ' + error);
@@ -11575,21 +11601,21 @@ function user_profile_form(form, form_state, account) {
     // password field no matter what.
     if (Drupal.user.uid == account.uid) {
       form.elements.current_pass = {
-        'title': 'Current password',
+        'title': _('Current password'),
         'type': 'password',
-        'description': 'Enter your current password to change the E-mail ' +
-          'address or Password.'
+        'description': _('Enter your current password to change the E-mail ') +
+          _('address or Password.')
       };
     }
     form.elements.pass_pass1 = {
-      'title': 'Password',
+      'title': _('Password'),
       'type': 'password'
     };
     form.elements.pass_pass2 = {
-      'title': 'Confirm password',
+      'title': _('Confirm password'),
       'type': 'password',
-      'description': 'To change the current user password, enter the new ' +
-        'password in both fields.'
+      'description': _('To change the current user password, enter the new ') +
+        _('password in both fields.')
     };
 
     // Add submit to form.
@@ -11600,7 +11626,7 @@ function user_profile_form(form, form_state, account) {
 
     // Add cancel button to form.
     form.buttons['cancel'] = {
-      'title': 'Cancel',
+      'title': _('Cancel'),
       attributes: {
         onclick: 'javascript:drupalgap_back();'
       }
@@ -11633,7 +11659,7 @@ function user_pass_form(form, form_state) {
   try {
     form.elements['name'] = {
       type: 'textfield',
-      title: 'Username or e-mail address',
+      title: _('Username or e-mail address'),
       required: true,
       attributes: {
         onkeypress: "drupalgap_form_onkeypress('" + form.id + "')"
@@ -11659,11 +11685,11 @@ function user_pass_form_submit(form, form_state) {
         success: function(result) {
           if (result[0]) {
             var msg =
-              'Further instructions have been sent to your e-mail address.';
+              _('Further instructions have been sent to your e-mail address.');
             drupalgap_set_message(msg);
           }
           else {
-            var msg = 'There was a problem sending an e-mail to your address.';
+            var msg = _('There was a problem sending an e-mail to your address.');
             drupalgap_set_message(msg, 'warning');
           }
           drupalgap_goto('user/login');
@@ -11672,7 +11698,6 @@ function user_pass_form_submit(form, form_state) {
   }
   catch (error) { console.log('user_pass_form_submit - ' + error); }
 }
-
 // Used to hold onto the terms once they've been loaded into a widget, keyed by
 // the form element's id, this allows (views exposed filters particularly) forms
 // to easily retrieve the terms after they've been fetch from the server.
@@ -13342,3 +13367,89 @@ drupalgap.views_datasource = {
   }
 };
 
+(function() {
+
+	var translate = function(text)
+	{
+		var xlate = translateLookup(text);
+		
+		if (typeof xlate == "function")
+		{
+			xlate = xlate.apply(this, arguments);
+		}
+		else if (arguments.length > 1)
+		{
+			var aps = Array.prototype.slice;
+			var args = aps.call( arguments, 1 );
+  
+			xlate = formatter(xlate, args);
+		}
+		
+		return xlate;
+	};
+	
+	// I want it available explicity as well as via the object
+	translate.translate = translate;
+	
+	//from https://gist.github.com/776196 via http://davedash.com/2010/11/19/pythonic-string-formatting-in-javascript/ 
+	var defaultFormatter = (function() {
+		var re = /\{([^}]+)\}/g;
+		return function(s, args) {
+			return s.replace(re, function(_, match){ return args[match]; });
+		}
+	}());
+	var formatter = defaultFormatter;
+	translate.setFormatter = function(newFormatter)
+	{
+		formatter = newFormatter;
+	};
+	
+	translate.format = function()
+	{
+		var aps = Array.prototype.slice;
+		var s = arguments[0];
+		var args = aps.call( arguments, 1 );
+  
+		return formatter(s, args);
+	};
+
+	var dynoTrans = null;
+	translate.setDynamicTranslator = function(newDynoTrans)
+	{
+		dynoTrans = newDynoTrans;
+	};
+
+	var translation = null;
+	translate.setTranslation = function(newTranslation)
+	{
+		translation = newTranslation;
+	};
+	
+	function translateLookup(target)
+	{
+		if (translation == null || target == null)
+		{
+			return target;
+		}
+		
+		if (target in translation == false)
+		{
+			if (dynoTrans != null)
+			{
+				return dynoTrans(target);
+			}
+			return target;
+		}
+		
+		var result = translation[target];
+		if (result == null)
+		{
+			return target;
+		}
+		
+		return result;
+	};
+	
+	window._ = translate;
+
+})();
