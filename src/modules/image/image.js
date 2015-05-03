@@ -55,6 +55,14 @@ function image_field_widget_form(form, form_state, field, instance, langcode,
     // Change the item type to a hidden input to hold the file id.
     items[delta].type = 'hidden';
 
+    // If we're dealing with the user profile 'picture' it isn't a real field,
+    // so we need to spoof some field settings to get the widget to render
+    // properly.
+    // @TODO the field label doesn't show up.
+    if (form.id == 'user_profile_form' && element.name == 'picture') {
+      field = { field_name: 'picture' };
+    }
+
     // If we already have an image for this item, show it.
     if (typeof items[delta].item !== 'undefined' && items[delta].item.fid) {
       // Set the hidden input's value equal to the file id.
@@ -85,9 +93,9 @@ function image_field_widget_form(form, form_state, field, instance, langcode,
 
     // Set the default button text, and if a value was provided,
     // overwrite the button text.
-    var button_text = 'Take Photo';
+    var button_text = t('Take Photo');
     if (items[delta].value) { button_text = items[delta].value; }
-    var browse_button_text = 'Browse';
+    var browse_button_text = t('Browse');
     if (items[delta].value2) { browse_button_text = items[delta].value2; }
 
     // Place variables into document for PhoneGap image processing.

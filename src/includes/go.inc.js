@@ -71,13 +71,12 @@ function drupalgap_goto(path) {
 
     // If the new router path is the same as the current router path and the new
     // path is the same as the current path, we may need to cancel the
-    // navigation attempt (i.e. don't go anywhere), unless...act on it...don't go anywhere, unless it is a
+    // navigation attempt (i.e. don't go anywhere), unless it is a
     // form submission, then continue.
     if (
       router_path == drupalgap_router_path_get() &&
-      drupalgap_path_get() == path
+      path == drupalgap_path_get()
     ) {
-
       // If it's a form submission, we'll continue onward...
       if (options.form_submission) { }
 
@@ -115,7 +114,10 @@ function drupalgap_goto(path) {
     // put the path onto the back_path array.
 
     // Save the back path.
-    drupalgap.back_path.push(drupalgap_path_get());
+    var back_paths_to_ignore = ['user/logout', '_reload'];
+    if (!in_array(drupalgap_path_get())) {
+      drupalgap.back_path.push(drupalgap_path_get());
+    }
 
     // Set the current menu path to the path input.
     drupalgap_path_set(path);
@@ -169,9 +171,8 @@ function drupalgap_goto(path) {
       }
     }
     else if (typeof options.reloadPage !== 'undefined' && options.reloadPage) {
-      // The page is not in the DOM, and we're being asked to reload it, this
-      // can't happen, so we'll just delete the reloadPage option.
-      console.log('WARNING - drupalgap_goto() asked to reload page not in DOM');
+      // The page is not in the DOM, and we're being asked to reload it, so
+      // we'll just delete the reloadPage option.
       delete options.reloadPage;
     }
 
@@ -255,7 +256,7 @@ function drupalgap_goto_generate_page_and_go(
       else {
         drupalgap_alert(
           'drupalgap_goto_generate_page_and_go - ' +
-          'failed to load theme\'s page.tpl.html file'
+          t('failed to load theme\'s page.tpl.html file')
         );
       }
     }
@@ -265,8 +266,11 @@ function drupalgap_goto_generate_page_and_go(
   }
 }
 
- /**
- * @deprecated
+/**
+ * Prepares a drupalgap page path.
+ * @deprecated Use _drupalgap_goto_prepare_path() instead.
+ * @param {String} path
+ * @return {String}
  */
 function drupalgap_goto_prepare_path(path) {
   try {
@@ -302,7 +306,11 @@ function _drupalgap_goto_prepare_path(path) {
           if (pos == -1) { continue; }
           query = parts[i].split('=');
           if (query.length != 2) { continue; }
-          _GET(decodeURIComponent(query[0]), decodeURIComponent(query[1]), path);
+          _GET(
+            decodeURIComponent(query[0]),
+            decodeURIComponent(query[1]),
+            path
+          );
         }
       }
     }
@@ -312,7 +320,7 @@ function _drupalgap_goto_prepare_path(path) {
       if (!drupalgap.settings.front) {
         drupalgap_alert(
           'drupalgap_goto_prepare_path - ' +
-          'no front page specified in settings.js!'
+          t('no front page specified in settings.js!')
         );
         return false;
       }
@@ -339,7 +347,7 @@ function _drupalgap_goto_prepare_path(path) {
 function drupalgap_back() {
   try {
     if ($('.ui-page-active').attr('id') == drupalgap.settings.front) {
-      var msg = 'Exit ' + drupalgap.settings.title + '?';
+      var msg = t('Exit')+' ' + drupalgap.settings.title + '?';
       if (drupalgap.settings.exit_message) {
         msg = drupalgap.settings.exit_message;
       }
@@ -357,9 +365,16 @@ function drupalgap_back() {
  */
 function _drupalgap_back() {
   try {
+    // @WARNING - any changes here (except the history.back() call) need to be
+    // reflected into the window "navigate" handler below
     drupalgap.back = true;
     history.back();
     drupalgap_path_set(drupalgap.back_path.pop());
+    drupalgap_router_path_set(
+      drupalgap_get_menu_link_router_path(
+        drupalgap_path_get()
+      )
+    );
   }
   catch (error) { console.log('drupalgap_back' + error); }
 }
@@ -386,9 +401,17 @@ $(window).on('navigate', function(event, data) {
       // back, forward (or undefined, aka moving from splash to front page)
       var direction = data.state.direction;
       if (direction == 'back' && drupalgap.back_path.length > 0) {
+        // @WARNING - any changes here should be reflected into
+        // _drupalgap_back().
         drupalgap.back = true;
-        drupalgap.path = drupalgap.back_path[drupalgap.back_path.length - 1];
+        drupalgap_path_set(drupalgap.back_path[drupalgap.back_path.length - 1]);
+        drupalgap_router_path_set(
+          drupalgap_get_menu_link_router_path(
+            drupalgap_path_get()
+          )
+        );
       }
     }
 
 });
+

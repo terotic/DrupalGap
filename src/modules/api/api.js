@@ -127,7 +127,7 @@ function hook_drupalgap_goto_preprocess(path) {
   try {
     // Pre process the front page.
     if (path == drupalgap.settings.front) {
-      drupalgap_alert('Preprocessing the front page!');
+      drupalgap_alert(t('Preprocessing the front page!'));
     }
   }
   catch (error) {
@@ -144,7 +144,7 @@ function hook_drupalgap_goto_post_process(path) {
   try {
     // Post process the front page.
     if (path == drupalgap.settings.front) {
-      drupalgap_alert('Post processing the front page!');
+      drupalgap_alert(t('Post processing the front page!'));
     }
   }
   catch (error) {
@@ -185,12 +185,34 @@ function hook_404(router_path) {}
 function hook_entity_post_render_content(entity, entity_type, bundle) {
   try {
     if (entity.type == 'article') {
-      entity.content += '<p>Example text on every article!</p>';
+      entity.content += '<p>'.t('Example text on every article!')+'</p>';
     }
   }
   catch (error) {
     console.log('hook_entity_post_render_content - ' + error);
   }
+}
+
+/**
+ * Implements hook_field_info_instance_add_to_form().
+ * Used by modules that provide custom fields to operate on a form or its
+ * elements before the form gets saved to local storage. This allows extra
+ * data be attached to the form that way things like hook_field_widget_form(),
+ * which takes place at render time, can have access to any extra data it may
+ * need.
+ * @param {String} entity_type
+ * @param {String} bundle
+ * @param {Object} form
+ * @param {Object} entity
+ * @param {Object} element
+ */
+function hook_field_info_instance_add_to_form(entity_type, bundle, form, entity, element) {
+  try {
+    // Attach a value_callback to the element so we can manually build its form
+    // state value.
+    element.value_callback = 'example_field_value_callback';
+  }
+  catch (error) { console.log('hook_field_info_instance_add_to_form - ' + error); }
 }
 
 /**
@@ -222,7 +244,7 @@ function hook_field_formatter_view(entity_type, entity, field, instance, langcod
     var content = {};
     $.each(items, function(delta, item) {
         content[delta] = {
-          markup: '<p>Hello!</p>'
+          markup: '<p>'+t('Hello!')+'</p>'
         };
     });
     return content;
@@ -300,7 +322,7 @@ function hook_menu() {
   try {
     var items = {};
     items['hello_world'] = {
-      title: 'Hello World',
+      title: t('Hello World'),
       page_callback: 'my_module_hello_world_page'
     };
     return items;
@@ -330,7 +352,7 @@ function hook_node_page_view_alter_TYPE(node, options) {
 
     var content = {};
     content['my_markup'] = {
-      markup: '<p>Click below to see the node!</p>'
+      markup: '<p>'+t('Click below to see the node!')+'</p>'
     };
     content['my_collapsible'] = {
       theme: 'collapsible',

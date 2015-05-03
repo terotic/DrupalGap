@@ -170,9 +170,9 @@ function _drupalgap_deviceready() {
 
     // Verify site path is set.
     if (!Drupal.settings.site_path || Drupal.settings.site_path == '') {
-      var msg = 'No site_path to Drupal set in the app/settings.js file!';
+      var msg = t('No site_path to Drupal set in the app/settings.js file!');
       drupalgap_alert(msg, {
-          title: 'Error'
+          title: t('Error')
       });
       return;
     }
@@ -184,7 +184,7 @@ function _drupalgap_deviceready() {
       module_invoke_all('device_offline');
       if (drupalgap.settings.offline_message) {
         drupalgap_alert(drupalgap.settings.offline_message, {
-            title: 'Offline',
+            title: t('Offline'),
             alertCallback: function() { drupalgap_goto('offline'); }
         });
       }
@@ -210,38 +210,46 @@ function _drupalgap_deviceready() {
         }
       }
       if (!proceed) {
-        drupalgap_goto('');
         // @todo - if module's are going to skip the System Connect call, then
         // we need to make sure Drupal.user is set up with appropriate defaults.
       }
       else {
-        // Device is online, let's build the default system connect options.
-        var options = {
-          success: function(result) {
-            // Call all hook_device_connected implementations then go to
-            // the front page.
-            module_invoke_all('device_connected');
-            drupalgap_goto('');
-          },
-          error: function(jqXHR, textStatus, errorThrown) {
-            // Build an informative error message and display it.
-            var msg = 'Failed connection to ' + drupalgap.settings.site_path;
-            if (errorThrown != '') { msg += ' - ' + errorThrown; }
-            msg += ' - Check your device\'s connection and check that ' +
-                   Drupal.settings.site_path + ' is online.';
-           drupalgap_alert(msg, {
-               title: 'Unable to Connect',
-               alertCallback: function() { drupalgap_goto('offline'); }
-           });
-          }
-        };
-
-        // Make the system connect call.
-        system_connect(options);
+        // Device is online, make the system connect call.
+        system_connect(_drupalgap_deviceready_options());
       }
     }
   }
   catch (error) { console.log('_drupalgap_deviceready - ' + error); }
+}
+
+/**
+ * Builds the default system connect options.
+ * @return {Object}
+ */
+function _drupalgap_deviceready_options() {
+  try {
+    var page_options = arguments[0] ? arguments[0] : {};
+    return {
+      success: function(result) {
+        // Call all hook_device_connected implementations then go to
+        // the front page.
+        module_invoke_all('device_connected');
+        drupalgap_goto('', page_options);
+      },
+      error: function(jqXHR, textStatus, errorThrown) {
+        // Build an informative error message and display it.
+        var msg = t('Failed connection to') + ' ' + drupalgap.settings.site_path;
+        if (errorThrown != '') { msg += ' - ' + errorThrown; }
+        msg += ' - '+t('Check your device\'s connection and check that')+' ' +
+               Drupal.settings.site_path + ' '+t('is online.');
+       drupalgap_alert(msg, {
+           title: t('Unable to Connect'),
+           alertCallback: function() { drupalgap_goto('offline'); }
+       });
+      }
+    };
+  }
+  catch (error) { console.log('_drupalgap_deviceready_options - ' + error); }
 }
 
 /**
@@ -335,7 +343,7 @@ function drupalgap_load_modules() {
                     },
                     dataType: 'script',
                     error: function(xhr, textStatus, errorThrown) {
-                      var msg = 'Failed to load module! (' + module.name + ')';
+                      var msg = t('Failed to load module!')+' (' + module.name + ')';
                       dpm(msg);
                       dpm(modules_paths_object);
                       dpm(textStatus);
@@ -361,7 +369,7 @@ function drupalgap_load_modules() {
 function drupalgap_load_theme() {
   try {
     if (!drupalgap.settings.theme) {
-      var msg = 'drupalgap_load_theme - no theme specified in settings.js';
+      var msg = 'drupalgap_load_theme - '+t('no theme specified in settings.js');
       drupalgap_alert(msg);
     }
     else {
@@ -372,8 +380,8 @@ function drupalgap_load_theme() {
         theme_path = 'app/themes/' + theme_name + '/' + theme_name + '.js';
       }
       if (!drupalgap_file_exists(theme_path)) {
-        var error_msg = 'drupalgap_theme_load - Failed to load theme! ' +
-          'The theme\'s JS file does not exist: ' + theme_path;
+        var error_msg = 'drupalgap_theme_load - '+t('Failed to load theme!')+' ' +
+          t('The theme\'s JS file does not exist')+': ' + theme_path;
         drupalgap_alert(error_msg);
         return false;
       }
@@ -404,8 +412,8 @@ function drupalgap_load_theme() {
         return true;
       }
       else {
-        var error_msg = 'drupalgap_load_theme() - failed - ' +
-          template_info_function + '() does not exist!';
+        var error_msg = 'drupalgap_load_theme() - '+t('failed')+' - ' +
+          template_info_function + '() '+t('does not exist!');
         drupalgap_alert(error_msg);
       }
     }
@@ -477,8 +485,8 @@ function drupalgap_alert(message) {
     var options = null;
     if (arguments[1]) { options = arguments[1]; }
     var alertCallback = function() { };
-    var title = 'Alert';
-    var buttonName = 'OK';
+    var title = t('Alert');
+    var buttonName = t('OK');
     if (options) {
       if (options.alertCallback) { alertCallback = options.alertCallback; }
       if (options.title) { title = options.title; }
@@ -517,8 +525,8 @@ function drupalgap_confirm(message) {
     var options = null;
     if (arguments[1]) { options = arguments[1]; }
     var confirmCallback = function(button) { };
-    var title = 'Confirm';
-    var buttonLabels = ['OK', 'Cancel'];
+    var title = t('Confirm');
+    var buttonLabels = [t('OK'), t('Cancel')];
     if (options) {
       if (options.confirmCallback) {
         confirmCallback = options.confirmCallback;
@@ -534,7 +542,8 @@ function drupalgap_confirm(message) {
       drupalgap.settings.mode == 'web-app'
     ) {
       var r = confirm(message);
-      if (r == true) { confirmCallback(); }
+      if (r == true) { confirmCallback(1); } // OK button.
+      else { confirmCallback(2); } // Cancel button.
     }
     else {
       navigator.notification.confirm(
@@ -555,7 +564,7 @@ function drupalgap_confirm(message) {
  * to wait before closing the message. Likewise, you can pass in a
  * third argument to specify how long to wait before opening the
  * message.
- * @param {html} string - The html to display.
+ * @param {string} html - The html to display.
  */
 function drupalgap_toast(html) {
   try {
@@ -1074,9 +1083,9 @@ function drupalgap_loading_message_hide() {
 function drupalgap_loader_options() {
   try {
     var mode = drupalgap.loader;
-    var text = 'Loading...';
+    var text = t('Loading')+'...';
     var textVisible = true;
-    if (mode == 'saving') { var text = 'Saving...'; }
+    if (mode == 'saving') { var text = t('Saving')+'...'; }
     var options = {
       text: text,
       textVisible: textVisible
@@ -1313,6 +1322,28 @@ function drupalgap_set_message(message) {
     drupalgap.messages.push(msg);
   }
   catch (error) { console.log('drupalgap_set_message - ' + error); }
+}
+
+/**
+ * Sets the current messages.
+ * @param {Array}
+ */
+function drupalgap_set_messages(messages) {
+  try {
+    drupalgap.messages = messages;
+  }
+  catch (error) { console.log('drupalgap_set_messages - ' + error); }
+}
+
+/**
+ * Returns the current messages.
+ * @return {Array}
+ */
+function drupalgap_get_messages() {
+  try {
+    return drupalgap.messages;
+  }
+  catch (error) { console.log('drupalgap_get_messages - ' + error); }
 }
 
 /**
@@ -1618,6 +1649,449 @@ function scrollToElement(selector, time, verticalOffset) {
 }
 
 /**
+ * Autocomplete global variables. Used to hold onto various global variables
+ * needed for an autocomplete.
+ */
+// The autocomplete text field input selector.
+var _theme_autocomplete_input_selector = {};
+
+// The autocomplete remote boolean.
+var _theme_autocomplete_remote = {};
+
+// The theme autocomplete variables.
+var _theme_autocomplete_variables = {};
+
+// The theme autocomplete variables.
+var _theme_autocomplete_success_handlers = {};
+
+/**
+ * Themes an autocomplete.
+ * @param {Object} variables
+ * @return {String}
+ */
+function theme_autocomplete(variables) {
+  try {
+    var html = '';
+
+    // We need to have a unique identifier for this autocomplete. If it is a
+    // field, use the field name. Otherwise use the id attribute if it is
+    // provided or generate a random one. Then finally attach the autocomplete
+    // id to the variables so it can be passed along.
+    var autocomplete_id = null;
+    if (typeof variables.field_info_field !== 'undefined') {
+      autocomplete_id = variables.field_info_field.field_name;
+    }
+    else if (typeof variables.attributes.id !== 'undefined') {
+      autocomplete_id = variables.attributes.id;
+    }
+    else { autocomplete_id = user_password(); }
+    variables.autocomplete_id = autocomplete_id;
+
+    // Hold onto a copy of the variables.
+    _theme_autocomplete_variables[autocomplete_id] = variables;
+
+    // Are we dealing with a remote data set?
+    var remote = false;
+    if (variables.remote) { remote = true; }
+    variables.remote = remote;
+    _theme_autocomplete_remote[autocomplete_id] = variables.remote;
+
+    // Make sure we have an id to use on the list.
+    var id = null;
+    if (variables.attributes.id) { id = variables.attributes.id; }
+    else {
+      id = 'autocomplete_' + user_password();
+      variables.attributes.id = id;
+    }
+
+    // We need a hidden input to hold the value. If a default value
+    // was provided by a form element, use it.
+    var hidden_attributes = { id: id };
+    if (
+      variables.element &&
+      typeof variables.element.default_value !== 'undefined'
+    ) { hidden_attributes.value = variables.element.default_value; }
+    html += theme('hidden', { attributes: hidden_attributes });
+
+    // Now we need an id for the list.
+    var list_id = id + '-list';
+
+    // Build the widget variables.
+    var widget = {
+      attributes: {
+        'id': list_id,
+        'data-role': 'listview',
+        'data-filter': 'true',
+        'data-inset': 'true',
+        'data-filter-placeholder': '...'
+      }
+    };
+
+    // Handle a remote data set.
+    var js = '';
+    if (variables.remote) {
+      widget.items = [];
+      // We have a remote data set.
+      js += '<script type="text/javascript">' +
+        '$("#' + list_id + '").on("filterablebeforefilter", function(e, d) { ' +
+          '_theme_autocomplete(this, e, d, "' + autocomplete_id + '"); ' +
+        '});' +
+      '</script>';
+    }
+    else {
+      // Prepare the items then set the data filter reveal attribute.
+      widget.items = _theme_autocomplete_prepare_items(variables);
+      widget.attributes['data-filter-reveal'] = true;
+    }
+
+    // Save a reference to the autocomplete text field input.
+    var selector = '#' + drupalgap_get_page_id() +
+      ' #' + id + ' + form.ui-filterable' +
+      ' input[data-type="search"]';
+    js += '<script type="text/javascript">' +
+      '_theme_autocomplete_input_selector["' + autocomplete_id + '"] = \'' +
+        selector +
+      '\';' +
+    '</script>';
+
+    // Theme the list and add the js to it, then return the html.
+    html += theme('item_list', widget);
+    html += js;
+    return html;
+  }
+  catch (error) { console.log('theme_autocomplete - ' + error); }
+}
+
+/**
+ * An internal function used to handle remote data for an autocomplete.
+ * @param {Object} list The unordered list that displays the items.
+ * @param {Object} e
+ * @param {Object} data
+ * @param {String} autocomplete_id
+ */
+function _theme_autocomplete(list, e, data, autocomplete_id) {
+  try {
+    var autocomplete = _theme_autocomplete_variables[autocomplete_id];
+    // Make sure a filter is present.
+    if (typeof autocomplete.filter === 'undefined') {
+      console.log(
+        '_theme_autocomplete - A "filter" was not supplied.'
+      );
+      return;
+    }
+
+    // Make sure a value and/or label has been supplied so we know how to render
+    // the items in the autocomplete list.
+    var value_provided =
+      typeof autocomplete.value !== 'undefined' ? true : false;
+    var label_provided =
+      typeof autocomplete.label !== 'undefined' ? true : false;
+    if (!value_provided && !label_provided) {
+      console.log(
+        '_theme_autocomplete - A "value" and/or "label" was not supplied.'
+      );
+      return;
+    }
+    else {
+      // We have a value and/or label. If one isn't provided, set it equal to
+      // the other.
+      if (!value_provided) { autocomplete.value = autocomplete.label; }
+      else if (!label_provided) { autocomplete.label = autocomplete.value; }
+    }
+    // Setup the vars to handle this widget.
+    var $ul = $(list),
+        $input = $(data.input),
+        value = $input.val(),
+        html = '';
+    // Clear the list.
+    $ul.html('');
+    // If a value has been input, start the autocomplete search.
+    if (value && value.length > 0) {
+      // Show the loader icon.
+      $ul.html('<li><div class="ui-loader">' +
+        '<span class="ui-icon ui-icon-loading"></span>' +
+        '</div></li>');
+      $ul.listview('refresh');
+
+      // Let's first build the success handler that will place the items into
+      // the autocomplete list.
+      _theme_autocomplete_success_handlers[autocomplete_id] = function(
+        _autocomplete_id, result_items, _wrapped, _child) {
+        try {
+
+          // If there are no results, and then if an empty callback handler was
+          // provided, call it.
+          // empty callback handler, then call it and return.
+          if (result_items.length == 0) {
+            if (autocomplete.empty_callback) {
+              var fn = window[autocomplete.empty_callback];
+              fn(value);
+            }
+          }
+          else {
+
+            // Convert the result into an items array for a list. Each item will
+            // be a JSON object with a "value" and "label" properties.
+            var items = [];
+            var _value = autocomplete.value;
+            var _label = autocomplete.label;
+            $.each(result_items, function(index, object) {
+                var _item = null;
+                if (_wrapped) { _item = object[_child]; }
+                else { _item = object; }
+                var item = {
+                  value: _item[_value],
+                  label: _item[_label]
+                };
+                items.push(item);
+            });
+
+            // Now render the items, add them to list and refresh the list.
+            if (items.length != 0) {
+              autocomplete.items = items;
+              var _items = _theme_autocomplete_prepare_items(autocomplete);
+              $.each(_items, function(index, item) {
+                html += '<li>' + item + '</li>';
+              });
+              $ul.html(html);
+              $ul.listview('refresh');
+              $ul.trigger('updatelayout');
+            }
+          }
+
+          // Anybody want to act on the completion of the autocomplete?
+          if (autocomplete.finish_callback) {
+            var fn = window[autocomplete.finish_callback];
+            fn(value);
+          }
+
+        }
+        catch (error) {
+          console.log('_theme_autocomplete_success_handlers[' +
+            _autocomplete_id +
+          '] - ' + error);
+        }
+      };
+
+      // Depending on the handler, build the path and call the Drupal site for
+      // the data. If it's a custom path, see if a handler was provided,
+      // otherwise just default to views.
+      var handler = null;
+      if (autocomplete.custom) {
+        if (autocomplete.handler) { handler = autocomplete.handler; }
+        else { handler = 'views'; }
+      }
+      else {
+        handler = autocomplete.field_info_field.settings.handler;
+      }
+      switch (handler) {
+
+        // Views (and Organic Groups)
+        case 'views':
+        case 'og':
+          // Prepare the path to the view.
+          var path = autocomplete.path + '?' + autocomplete.filter + '=' +
+            encodeURIComponent(value);
+          // Any extra params to send along?
+          if (autocomplete.params) { path += '&' + autocomplete.params; }
+
+          // Retrieve JSON results. Keep in mind, we use this for retrieving
+          // Views JSON results and custom hook_menu() path results in Drupal.
+          views_datasource_get_view_result(path, {
+              success: function(results) {
+                // If this was a custom path, don't use a wrapper around the
+                // results like the one used by Views Datasource.
+                var wrapped = true;
+                if (autocomplete.custom) { wrapped = false; }
+
+                // Extract the result items based on the presence of the wrapper
+                // or not.
+                var result_items = null;
+                if (wrapped) { result_items = results[results.view.root]; }
+                else { result_items = results; }
+
+                // Finally call the sucess handler.
+                var fn = _theme_autocomplete_success_handlers[autocomplete_id];
+                fn(autocomplete_id, result_items, wrapped, results.view.child);
+              }
+          });
+          break;
+
+        // Simple entity selection mode, use the Index resource for the entity
+        // type.
+        case 'base':
+          var field_settings =
+            autocomplete.field_info_field.settings;
+          var index_resource = field_settings.target_type + '_index';
+          if (!drupalgap_function_exists(index_resource)) {
+            console.log('WARNING - _theme_autocomplete - ' +
+              index_resource + '() does not exist!'
+            );
+            return;
+          }
+          var options = {
+            fields: ['nid', 'title'],
+            parameters: {
+              title: '%' + value + '%'
+            },
+            parameters_op: {
+              title: 'like'
+            }
+          };
+          $.each(
+            field_settings.handler_settings.target_bundles,
+            function(bundle, name) {
+              options.parameters.type = bundle;
+              // @TODO allow multiple bundles to be indexed.
+              return false;
+          });
+          var fn = window[index_resource];
+          fn(options, {
+              success: function(results) {
+                var fn = _theme_autocomplete_success_handlers[autocomplete_id];
+                fn(autocomplete_id, results, false);
+              }
+          });
+          break;
+
+        // An entity index resource call. Figure out which entity type index
+        // to call, and build a default query if one wasn't provided.
+        case 'index':
+          if (!autocomplete.entity_type) {
+            console.log(
+              'WARNING - _theme_autocomplete - no entity_type provided'
+            );
+            return;
+          }
+          var function_name = autocomplete.entity_type + '_index';
+          var fn = window[function_name];
+          var query = null;
+          if (autocomplete.query) { query = autocomplete.query; }
+          else {
+            query = {
+              parameters: { },
+              parameters_op: { }
+            };
+            var fields = [];
+            switch (autocomplete.entity_type) {
+              case 'node':
+                fields = ['nid', 'title'];
+                break;
+              case 'taxonomy_term':
+                fields = ['tid', 'name'];
+                if (autocomplete.vid) {
+                  query.parameters['vid'] = autocomplete.vid;
+                }
+                break;
+            }
+            query.fields = fields;
+            query.parameters[autocomplete.filter] = '%' + value + '%';
+            query.parameters_op[autocomplete.filter] = 'like';
+          }
+          fn.apply(null, [query, {
+              success: function(results) {
+                var fn = _theme_autocomplete_success_handlers[autocomplete_id];
+                fn(autocomplete_id, results, false, null);
+              }
+          }]);
+          break;
+
+        // The default handler...
+        default:
+
+          // If we made it this far, and don't have a handler, then warn the
+          // developer.
+          if (!handler) {
+            console.log('WARNING - _theme_autocomplete - no handler provided');
+            return;
+          }
+
+          break;
+
+      }
+
+    }
+  }
+  catch (error) { console.log('_theme_autocomplete - ' + error); }
+}
+
+/**
+ * An internal function used to prepare the items for an autocomplete list.
+ * @param {Object} variables
+ * @return {*}
+ */
+function _theme_autocomplete_prepare_items(variables) {
+  try {
+    // Make sure we have an items array.
+    var items = [];
+    if (variables.items) { items = variables.items; }
+
+    // Prepare the items, and return them.
+    var _items = [];
+    if (items.length > 0) {
+      $.each(items, function(index, item) {
+          var value = '';
+          var label = '';
+          if (typeof item === 'string') {
+            value = item;
+            label = item;
+          }
+          else {
+            value = item.value;
+            label = item.label;
+          }
+          var options = {
+            attributes: {
+              value: value,
+              onclick: '_theme_autocomplete_click(\'' +
+                variables.attributes.id +
+              '\', this, \'' + variables.autocomplete_id + '\')'
+            }
+          };
+          var _item = l(label, null, options);
+          _items.push(_item);
+      });
+    }
+    return _items;
+  }
+  catch (error) { console.log('_theme_autocomplete_prepare_items - ' + error); }
+}
+
+/**
+ * An internal function used to handle clicks on items in autocomplete results.
+ * @param {String} id The id of the hidden input that holds the value.
+ * @param {Object} item The list item anchor that was just clicked.
+ * @param {String} autocomplete_id
+ */
+function _theme_autocomplete_click(id, item, autocomplete_id) {
+  try {
+    // Set the hidden input with the value, and the text field with the text.
+    var list_id = id + '-list';
+    $('#' + id).val($(item).attr('value'));
+    $(_theme_autocomplete_input_selector[autocomplete_id]).val($(item).html());
+    if (_theme_autocomplete_remote[autocomplete_id]) {
+      $('#' + list_id).html('');
+    }
+    else {
+      $('#' + list_id + ' li').addClass('ui-screen-hidden');
+      $('#' + list_id).listview('refresh');
+    }
+    // Now fire the item onclick handler, if one was provided.
+    if (
+      _theme_autocomplete_variables[autocomplete_id].item_onclick &&
+      drupalgap_function_exists(
+        _theme_autocomplete_variables[autocomplete_id].item_onclick
+      )
+    ) {
+      var fn =
+        window[_theme_autocomplete_variables[autocomplete_id].item_onclick];
+      fn(id, $(item));
+    }
+  }
+  catch (error) { console.log('_theme_autocomplete_click - ' + error); }
+}
+
+/**
  * Given a block delta, this will return the corresponding
  * block from drupalgap.blocks.
  * @param {String} delta
@@ -1635,7 +2109,7 @@ function drupalgap_block_load(delta) {
       });
     }
     if (block == null) {
-      var msg = 'drupalgap_block_load - failed to load "' + delta + '" block!';
+      var msg = 'drupalgap_block_load - '+t('failed to load')+' "' + delta + '" '+t('block!');
       drupalgap_alert(msg);
     }
     return block;
@@ -1644,7 +2118,13 @@ function drupalgap_block_load(delta) {
 }
 
 /**
- *
+ * Renders the html string for a block.
+ * @param {Object} region
+ * @param {String} current_path
+ * @param {String} block_delta
+ * @param {Object} block_settings
+ * @param {Object} block_counts
+ * @return {String}
  */
 function drupalgap_block_render(region, current_path, block_delta,
   block_settings, block_counts) {
@@ -2065,123 +2545,12 @@ function bl() {
 }
 
 /**
- * Internal function used to dynamically add another element item to a form for
- * unlimited value fields.
- * @param {String} form_id
- * @param {String} name
- * @param {Number} delta
+ * Returns translated text.
+ * @return {String}
  */
-function _drupalgap_form_add_another_item(form_id, name, delta) {
-  try {
-    // Locate the last item, load the form, extract the element from
-    // the form, generate default variables for the new item, determine the next
-    // delta value.
-    var selector = '.' + drupalgap_form_get_element_container_class(name) +
-      ' .drupalgap_form_add_another_item';
-    var add_another_item_button = $(selector);
-    var form = drupalgap_form_local_storage_load(form_id);
-    var language = language_default();
-    var item = drupalgap_form_element_item_create(
-      name,
-      form,
-      language,
-      delta + 1
-    );
-    form.elements[name][language][delta + 1] = item;
-    var element = form.elements[name];
-    var variables = {
-      attributes: {},
-      field_info_field: element.field_info_field,
-      field_info_instance: element.field_info_instance
-    };
-    var field_widget_form_function =
-      element.field_info_instance.widget.module + '_field_widget_form';
-    window[field_widget_form_function].apply(
-      null,
-      _drupalgap_form_element_items_widget_arguments(
-        form,
-        null,
-        element,
-        language,
-        delta + 1
-      )
-    );
-    drupalgap_form_local_storage_save(form);
-    $(add_another_item_button).before(
-      _drupalgap_form_render_element_item(form, element, variables, item)
-    );
-  }
-  catch (error) { console.log('_drupalgap_form_add_another_item - ' + error); }
+function t(str) {
+  return str;
 }
-
-/**
- * Returns a 'Cancel' button object that can be used on most forms.
- * @return {Object}
- */
-function drupalgap_form_cancel_button() {
-    return {
-      'title': 'Cancel',
-      attributes: {
-        onclick: 'javascript:drupalgap_back();'
-      }
-    };
-}
-
-/**
- * Given a jQuery selector to a form, this will clear all the elements on
- * the UI.
- * @see http://stackoverflow.com/a/6364313/763010
- */
-function drupalgap_form_clear(form_selector) {
-  try {
-    $(':input', form_selector)
-     .not(':button, :submit, :reset, :hidden')
-     .val('')
-     .removeAttr('checked')
-     .removeAttr('selected');
-  }
-  catch (error) { console.log('drupalgap_form_clear - ' + error); }
-}
-
-/**
- * Given a form id, this will assemble and return the default form JSON object.
- * @param {String} form_id
- * @return {Object}
- */
-function drupalgap_form_defaults(form_id) {
-  try {
-    var form = {};
-    // Set the form id, elements, buttons, options and attributes.
-    form.id = form_id;
-    form.elements = {};
-    form.buttons = {};
-    form.options = {
-      attributes: {
-        'class': ''
-      }
-    };
-    // Create a prefix and suffix.
-    form.prefix = '';
-    form.suffix = '';
-    // Create empty arrays for the form's validation and submission handlers,
-    // then add the default call back functions to their respective array, if
-    // they exist.
-    form.validate = [];
-    form.submit = [];
-    var validate_function_name = form.id + '_validate';
-    if (drupalgap_function_exists(validate_function_name)) {
-      form.validate.push(validate_function_name);
-    }
-    var submit_function_name = form.id + '_submit';
-    if (drupalgap_function_exists(submit_function_name)) {
-      form.submit.push(submit_function_name);
-    }
-    // Finally, return the form.
-    return form;
-  }
-  catch (error) { console.log('drupalgap_form_defaults - ' + error); }
-}
-
 /**
  * Given a form element, this will return true if access to the element is
  * permitted, false otherwise.
@@ -2265,405 +2634,6 @@ function drupalgap_form_get_element_container_class(name) {
   catch (error) {
     console.log('drupalgap_form_get_element_container_class - ' + error);
   }
-}
-
-/**
- * Given a drupalgap form, this renders the form html and returns it.
- * @param {Object} form
- * @return {String}
- */
-function drupalgap_form_render(form) {
-  try {
-    // @TODO - we may possibly colliding html element ids!!! For example, I
-    // think the node edit page gets an id of "node_edit" and possibly so does
-    // the node edit form, which also may get an id of "node_edit". We may want
-    // to prefix both the template page and form ids with prefixes, e.g.
-    // drupalgap_page_* and drupalgap_form_*, but adding these prefixes could
-    // get annoying for css selectors used in jQuery and CSS. What to do?
-
-    // If no form id is provided, warn the user.
-    if (!form.id) {
-      return '<p>drupalgap_form_render() - missing form id!</p>' +
-        JSON.stringify(form);
-    }
-    // If the form already exists in the DOM, remove it.
-    if ($('form#' + form.id).length) { $('form#' + form.id).remove(); }
-    // Render the prefix and suffix and wrap them in their own div.
-    var prefix = form.prefix;
-    if (!empty(prefix)) {
-      prefix = '<div class="form_prefix">' + prefix + '</div>';
-    }
-    var suffix = form.suffix;
-    if (!empty(suffix)) {
-      suffix = '<div class="form_suffix">' + suffix + '</div>';
-    }
-    // Render the form's input elements.
-    var form_elements = _drupalgap_form_render_elements(form);
-    var form_attributes = drupalgap_attributes(form.options.attributes);
-    // Return the form html.
-    var form_html = '<form id="' + form.id + '" ' + form_attributes + '>' +
-      prefix +
-      '<div id="drupalgap_form_errors"></div>' +
-      form_elements +
-      suffix +
-    '</form>';
-    return form_html;
-  }
-  catch (error) { console.log('drupalgap_form_render - ' + error); }
-}
-
-/**
- * Given a form element name and an error message, this attaches the error
- * message to the drupalgap.form_errors array, keyed by the form element name.
- * @param {String} name
- * @param {String} message
- */
-function drupalgap_form_set_error(name, message) {
-  try {
-    drupalgap.form_errors[name] = message;
-  }
-  catch (error) { console.log('drupalgap_form_set_error - ' + error); }
-}
-
-/**
- * Given a form, this function iterates over the form's elements and assembles
- * each element and value and places them into the form state's values. This
- * is similar to $form_state['values'] in Drupal.
- * @param {Object} form
- * @return {Object}
- */
-function drupalgap_form_state_values_assemble(form) {
-  try {
-    var lng = language_default();
-    var form_state = {'values': {}};
-    $.each(form.elements, function(name, element) {
-      if (name == 'submit') { return; } // Always skip the form 'submit'.
-      var id = null;
-      if (element.is_field) {
-        form_state.values[name] = {};
-        form_state.values[name][lng] = {};
-        var allowed_values = element.field_info_field.cardinality;
-        if (allowed_values == -1) {
-          allowed_values = 1; // Convert unlimited value field to one for now...
-        }
-        for (var delta = 0; delta < allowed_values; delta++) {
-          id = drupalgap_form_get_element_id(name, form.id, lng, delta);
-          form_state.values[name][lng][delta] =
-            _drupalgap_form_state_values_assemble_get_element_value(
-              id,
-              element
-            );
-        }
-      }
-      else {
-        id = drupalgap_form_get_element_id(name, form.id);
-        form_state.values[name] =
-          _drupalgap_form_state_values_assemble_get_element_value(
-            id,
-            element
-          );
-      }
-    });
-    // Attach the form state to drupalgap.form_states keyed by the form id.
-    drupalgap.form_states[form.id] = form_state;
-    return form_state;
-  }
-  catch (error) {
-    console.log('drupalgap_form_state_values_assemble - ' + error);
-  }
-}
-
-/**
- *
- * @param {String} id
- * @param {Object} element
- * @return {String|Number}
- */
-function _drupalgap_form_state_values_assemble_get_element_value(id, element) {
-  try {
-    // If a value_callback is specified on the element, call that function to
-    // retrieve the element's value. Ohterwise, we'll use the default techniques
-    // implemented to extract a value for the form state.
-    if (element.value_callback && function_exists(element.value_callback)) {
-      var fn = window[element.value_callback];
-      return fn(id, element);
-    }
-    // Figure out the value, depending on the element type.
-    var value = null;
-    var selector = '';
-    if (element.type == 'radios') {
-      selector = 'input:radio[name="' + id + '"]:checked';
-    }
-    else { selector = '#' + id; }
-    switch (element.type) {
-      case 'checkbox':
-        var _checkbox = $(selector);
-        if ($(_checkbox).is(':checked')) { value = 1; }
-        else { value = 0; }
-        break;
-      case 'checkboxes':
-        // Iterate over each option, and see if it is checked, then pop it onto
-        // the value array. It's possible for values to be updated dynamically
-        // by a developer (i.e. through a pageshow handler), so it isn't safe to
-        // look at the options in local storage. Instead we'll directly iterate
-        // over the element option(s) in the DOM.
-        value = {};
-        var options = $('label[for="' + id + '"]').siblings('.ui-checkbox');
-        $.each(options, function(index, option) {
-            var checkbox = $(option).children('input');
-            var _value = $(checkbox).attr('value');
-            if ($(checkbox).is(':checked')) { value[_value] = _value; }
-            else { value[_value] = 0; }
-        });
-        break;
-      case 'list_boolean':
-        var _checkbox = $(selector);
-        if ($(_checkbox).is(':checked')) { value = $(_checkbox).attr('on'); }
-        else { value = $(_checkbox).attr('off'); }
-        break;
-    }
-    if (value === null) { value = $(selector).val(); }
-    if (typeof value === 'undefined') { value = null; }
-    return value;
-  }
-  catch (error) {
-    console.log(
-      '_drupalgap_form_state_values_assemble_get_element_value - ' +
-      error
-    );
-  }
-}
-
-/**
- * Given a form id, this will render the form and return the html for the form.
- * Any additional arguments will be sent along to the form.
- * @param {String} form_id
- * @return {String}
- */
-function drupalgap_get_form(form_id) {
-  try {
-    var html = '';
-    var form = drupalgap_form_load.apply(
-      null,
-      Array.prototype.slice.call(arguments)
-    );
-    if (form) {
-      // Render the form.
-      html = drupalgap_form_render(form);
-    }
-    else {
-      var msg = 'drupalgap_get_form - failed to get form (' + form_id + ')';
-      drupalgap_alert(msg);
-    }
-    return html;
-  }
-  catch (error) { console.log('drupalgap_get_form - ' + error); }
-}
-
-/**
- * Given a form id, this will return the form JSON object assembled by the
- * form's call back function. If the form fails to load, this returns false.
- * @param {String} form_id
- * @return {Object}
- */
-function drupalgap_form_load(form_id) {
-  try {
-
-    var form = drupalgap_form_defaults(form_id);
-
-    // The form's call back function will be equal to the form id.
-    var function_name = form_id;
-    if (drupalgap_function_exists(function_name)) {
-
-      // Grab the form's function.
-      var fn = window[function_name];
-
-      // Determine the language code.
-      var language = language_default();
-
-      // Build the form arguments by iterating over each argument then adding
-      // each to to the form arguments, afterwards remove the argument at index
-      // zero because that is the form id.
-      var form_arguments = [];
-      $.each(arguments, function(index, argument) {
-            form_arguments.push(argument);
-      });
-      form_arguments.splice(0, 1);
-
-      // Attach the form arguments to the form object.
-      form.arguments = form_arguments;
-
-      // If there were no arguments to pass along, call the function directly to
-      // retrieve the form, otherwise call the function and pass along any
-      // arguments to retrieve the form.
-      if (form_arguments.length == 0) { form = fn(form, null); }
-      else {
-        // We must consolidate the form, form_state and arguments into one array
-        // and then pass it along to the form builder.
-        var consolidated_arguments = [];
-        var form_state = null;
-        consolidated_arguments.push(form);
-        consolidated_arguments.push(form_state);
-        $.each(form_arguments, function(index, argument) {
-          consolidated_arguments.push(argument);
-        });
-        form = fn.apply(
-          null,
-          Array.prototype.slice.call(consolidated_arguments)
-        );
-      }
-
-      // Set empty options and attributes properties on each form element if the
-      // element does not yet have any. This allows others to more easily modify
-      // options and attributes on an element without having to worry about
-      // testing for nulls and creating empty properties first.
-      $.each(form.elements, function(name, element) {
-          // If this element is a field, load its field_info_field and
-          // field_info_instance onto the element.
-          var element_is_field = false;
-          var field_info_field = drupalgap_field_info_field(name);
-          if (field_info_field) {
-            element_is_field = true;
-            form.elements[name].field_info_field = field_info_field;
-            form.elements[name].field_info_instance =
-              drupalgap_field_info_instance(
-                form.entity_type,
-                name,
-                form.bundle
-              );
-          }
-          form.elements[name].is_field = element_is_field;
-          // Set the name property on the element if it isn't already set.
-          if (!form.elements[name].name) { form.elements[name].name = name; }
-          // If the element is a field, we'll append a language code and delta
-          // value to the element id, along with the field items appended
-          // onto the element using the language code and delta values.
-          var id = null;
-          if (element_is_field) {
-            // What's the number of allowed values (cardinality) on this field?
-            // A cardinality of -1 means the field has unlimited values.
-            var cardinality = parseInt(element.field_info_field.cardinality);
-            if (cardinality == -1) {
-              cardinality = 1; // we'll just add one element for now, until we
-                               // figure out how to handle the 'add another
-                               // item' feature.
-            }
-            // Initialize the item collections language code if it hasn't been.
-            if (!form.elements[name][language]) {
-              form.elements[name][language] = {};
-            }
-            // Prepare the item(s) for this element.
-            for (var delta = 0; delta < cardinality; delta++) {
-              // Prepare some item defaults.
-              var item = drupalgap_form_element_item_create(
-                name,
-                form,
-                language,
-                delta
-              );
-              // If the delta for this item hasn't been created on the element,
-              // create it using the default item values. Otherwise, merge the
-              // default values into the pre existing item on the element.
-              if (!form.elements[name][language][delta]) {
-                form.elements[name][language][delta] = item;
-              }
-              else {
-                $.extend(true, form.elements[name][language][delta], item);
-              }
-            }
-          }
-          else {
-            // This element is not a field, setup default options if none
-            // have been provided. Then set the element id.
-            if (!element.options) {
-              form.elements[name].options = {attributes: {}};
-            }
-            else if (!element.options.attributes) {
-              form.elements[name].options.attributes = {};
-            }
-            id = drupalgap_form_get_element_id(name, form.id);
-            form.elements[name].id = id;
-            form.elements[name].options.attributes.id = id;
-          }
-      });
-
-      // Give modules an opportunity to alter the form.
-      module_invoke_all('form_alter', form, null, form_id);
-
-      // Place the assembled form into local storage so _drupalgap_form_submit
-      // will have access to the assembled form.
-      drupalgap_form_local_storage_save(form);
-    }
-    else {
-      var error_msg = 'drupalgap_form_load - no callback function (' +
-                       function_name + ') available for form (' + form_id + ')';
-      drupalgap_alert(error_msg);
-    }
-    return form;
-  }
-  catch (error) { console.log('drupalgap_form_load - ' + error); }
-}
-
-/**
- * Given a form id, this will delete the form from local storage.
- * If the form isn't in local storage, this returns false.
- * @param {String} form_id
- * @return {Object}
- */
-function drupalgap_form_local_storage_delete(form_id) {
-  try {
-    var result = window.localStorage.removeItem(
-      drupalgap_form_id_local_storage_key(form_id)
-    );
-    return result;
-  }
-  catch (error) {
-    console.log('drupalgap_form_local_storage_delete - ' + error);
-  }
-}
-
-/**
- * Given a form id, this will load the form from local storage and return it.
- * If the form isn't in local storage, this returns false.
- * @param {String} form_id
- * @return {Object}
- */
-function drupalgap_form_local_storage_load(form_id) {
-  try {
-    var form = false;
-    form = window.localStorage.getItem(
-      drupalgap_form_id_local_storage_key(form_id)
-    );
-    if (!form) { form = false; }
-    else { form = JSON.parse(form); }
-    return form;
-  }
-  catch (error) { console.log('drupalgap_form_local_storage_load - ' + error); }
-}
-
-/**
- * Given a form, this will save the form to local storage, overwriting any
- * previously saved forms.
- * @param {Object} form
- */
-function drupalgap_form_local_storage_save(form) {
-  try {
-    window.localStorage.setItem(
-      drupalgap_form_id_local_storage_key(form.id),
-      JSON.stringify(form)
-    );
-  }
-  catch (error) { console.log('drupalgap_form_local_storage_save - ' + error); }
-}
-
-/**
- * Given a form id, this will return the local storage key used by DrupalGap
- * to save the assembled form to the device's local storage.
- * @param {String} form_id
- * @return {String}
- */
-function drupalgap_form_id_local_storage_key(form_id) {
-    return 'drupalgap_form_' + form_id;
 }
 
 /**
@@ -3168,6 +3138,433 @@ function _drupalgap_form_element_items_widget_arguments(form, form_state,
 }
 
 /**
+ * Internal function used to dynamically add another element item to a form for
+ * unlimited value fields.
+ * @param {String} form_id
+ * @param {String} name
+ * @param {Number} delta
+ */
+function _drupalgap_form_add_another_item(form_id, name, delta) {
+  try {
+    // Locate the last item, load the form, extract the element from
+    // the form, generate default variables for the new item, determine the next
+    // delta value.
+    var selector = '.' + drupalgap_form_get_element_container_class(name) +
+      ' .drupalgap_form_add_another_item';
+    var add_another_item_button = $(selector);
+    var form = drupalgap_form_local_storage_load(form_id);
+    var language = language_default();
+    var item = drupalgap_form_element_item_create(
+      name,
+      form,
+      language,
+      delta + 1
+    );
+    form.elements[name][language][delta + 1] = item;
+    var element = form.elements[name];
+    var variables = {
+      attributes: {},
+      field_info_field: element.field_info_field,
+      field_info_instance: element.field_info_instance
+    };
+    var field_widget_form_function =
+      element.field_info_instance.widget.module + '_field_widget_form';
+    window[field_widget_form_function].apply(
+      null,
+      _drupalgap_form_element_items_widget_arguments(
+        form,
+        null,
+        element,
+        language,
+        delta + 1
+      )
+    );
+    drupalgap_form_local_storage_save(form);
+    $(add_another_item_button).before(
+      _drupalgap_form_render_element_item(form, element, variables, item)
+    );
+  }
+  catch (error) { console.log('_drupalgap_form_add_another_item - ' + error); }
+}
+
+/**
+ * Returns a 'Cancel' button object that can be used on most forms.
+ * @return {Object}
+ */
+function drupalgap_form_cancel_button() {
+    return {
+      'title': t('Cancel'),
+      attributes: {
+        onclick: 'javascript:drupalgap_back();'
+      }
+    };
+}
+
+/**
+ * Given a jQuery selector to a form, this will clear all the elements on
+ * the UI.
+ * @see http://stackoverflow.com/a/6364313/763010
+ */
+function drupalgap_form_clear(form_selector) {
+  try {
+    $(':input', form_selector)
+     .not(':button, :submit, :reset, :hidden')
+     .val('')
+     .removeAttr('checked')
+     .removeAttr('selected');
+  }
+  catch (error) { console.log('drupalgap_form_clear - ' + error); }
+}
+
+/**
+ * Given a form id, this will assemble and return the default form JSON object.
+ * @param {String} form_id
+ * @return {Object}
+ */
+function drupalgap_form_defaults(form_id) {
+  try {
+    var form = {};
+    // Set the form id, elements, buttons, options and attributes.
+    form.id = form_id;
+    form.elements = {};
+    form.buttons = {};
+    form.options = {
+      attributes: {
+        'class': ''
+      }
+    };
+    // Create a prefix and suffix.
+    form.prefix = '';
+    form.suffix = '';
+    // Create empty arrays for the form's validation and submission handlers,
+    // then add the default call back functions to their respective array, if
+    // they exist.
+    form.validate = [];
+    form.submit = [];
+    var validate_function_name = form.id + '_validate';
+    if (drupalgap_function_exists(validate_function_name)) {
+      form.validate.push(validate_function_name);
+    }
+    var submit_function_name = form.id + '_submit';
+    if (drupalgap_function_exists(submit_function_name)) {
+      form.submit.push(submit_function_name);
+    }
+    // Finally, return the form.
+    return form;
+  }
+  catch (error) { console.log('drupalgap_form_defaults - ' + error); }
+}
+
+/**
+ * Given a drupalgap form, this renders the form html and returns it.
+ * @param {Object} form
+ * @return {String}
+ */
+function drupalgap_form_render(form) {
+  try {
+    // @TODO - we may possibly colliding html element ids!!! For example, I
+    // think the node edit page gets an id of "node_edit" and possibly so does
+    // the node edit form, which also may get an id of "node_edit". We may want
+    // to prefix both the template page and form ids with prefixes, e.g.
+    // drupalgap_page_* and drupalgap_form_*, but adding these prefixes could
+    // get annoying for css selectors used in jQuery and CSS. What to do?
+
+    // If no form id is provided, warn the user.
+    if (!form.id) {
+      return '<p>drupalgap_form_render() - missing form id!</p>' +
+        JSON.stringify(form);
+    }
+    // If the form already exists in the DOM, remove it.
+    if ($('form#' + form.id).length) { $('form#' + form.id).remove(); }
+    // Render the prefix and suffix and wrap them in their own div.
+    var prefix = form.prefix;
+    if (!empty(prefix)) {
+      prefix = '<div class="form_prefix">' + prefix + '</div>';
+    }
+    var suffix = form.suffix;
+    if (!empty(suffix)) {
+      suffix = '<div class="form_suffix">' + suffix + '</div>';
+    }
+    // Render the form's input elements.
+    var form_elements = _drupalgap_form_render_elements(form);
+    var form_attributes = drupalgap_attributes(form.options.attributes);
+    // Return the form html.
+    var form_html = '<form id="' + form.id + '" ' + form_attributes + '>' +
+      prefix +
+      '<div id="drupalgap_form_errors"></div>' +
+      form_elements +
+      suffix +
+    '</form>';
+    return form_html;
+  }
+  catch (error) { console.log('drupalgap_form_render - ' + error); }
+}
+
+/**
+ * Given a form element name and an error message, this attaches the error
+ * message to the drupalgap.form_errors array, keyed by the form element name.
+ * @param {String} name
+ * @param {String} message
+ */
+function drupalgap_form_set_error(name, message) {
+  try {
+    drupalgap.form_errors[name] = message;
+  }
+  catch (error) { console.log('drupalgap_form_set_error - ' + error); }
+}
+
+/**
+ * Given a form id, this will render the form and return the html for the form.
+ * Any additional arguments will be sent along to the form.
+ * @param {String} form_id
+ * @return {String}
+ */
+function drupalgap_get_form(form_id) {
+  try {
+    var html = '';
+    var form = drupalgap_form_load.apply(
+      null,
+      Array.prototype.slice.call(arguments)
+    );
+    if (form) {
+      // Render the form.
+      html = drupalgap_form_render(form);
+    }
+    else {
+      var msg = 'drupalgap_get_form - '+t('failed to get form')+' (' + form_id + ')';
+      drupalgap_alert(msg);
+    }
+    return html;
+  }
+  catch (error) { console.log('drupalgap_get_form - ' + error); }
+}
+
+/**
+ * Given a form id, this will return the form JSON object assembled by the
+ * form's call back function. If the form fails to load, this returns false.
+ * @param {String} form_id
+ * @return {Object}
+ */
+function drupalgap_form_load(form_id) {
+  try {
+
+    var form = drupalgap_form_defaults(form_id);
+
+    // The form's call back function will be equal to the form id.
+    var function_name = form_id;
+    if (drupalgap_function_exists(function_name)) {
+
+      // Grab the form's function.
+      var fn = window[function_name];
+
+      // Determine the language code.
+      var language = language_default();
+
+      // Build the form arguments by iterating over each argument then adding
+      // each to to the form arguments, afterwards remove the argument at index
+      // zero because that is the form id.
+      var form_arguments = [];
+      $.each(arguments, function(index, argument) {
+            form_arguments.push(argument);
+      });
+      form_arguments.splice(0, 1);
+
+      // Attach the form arguments to the form object.
+      form.arguments = form_arguments;
+
+      // If there were no arguments to pass along, call the function directly to
+      // retrieve the form, otherwise call the function and pass along any
+      // arguments to retrieve the form.
+      if (form_arguments.length == 0) { form = fn(form, null); }
+      else {
+        // We must consolidate the form, form_state and arguments into one array
+        // and then pass it along to the form builder.
+        var consolidated_arguments = [];
+        var form_state = null;
+        consolidated_arguments.push(form);
+        consolidated_arguments.push(form_state);
+        $.each(form_arguments, function(index, argument) {
+          consolidated_arguments.push(argument);
+        });
+        form = fn.apply(
+          null,
+          Array.prototype.slice.call(consolidated_arguments)
+        );
+      }
+
+      // Set empty options and attributes properties on each form element if the
+      // element does not yet have any. This allows others to more easily modify
+      // options and attributes on an element without having to worry about
+      // testing for nulls and creating empty properties first.
+      $.each(form.elements, function(name, element) {
+          // If this element is a field, load its field_info_field and
+          // field_info_instance onto the element.
+          var element_is_field = false;
+          var field_info_field = drupalgap_field_info_field(name);
+          if (field_info_field) {
+            element_is_field = true;
+            form.elements[name].field_info_field = field_info_field;
+            form.elements[name].field_info_instance =
+              drupalgap_field_info_instance(
+                form.entity_type,
+                name,
+                form.bundle
+              );
+          }
+          form.elements[name].is_field = element_is_field;
+          // Set the name property on the element if it isn't already set.
+          if (!form.elements[name].name) { form.elements[name].name = name; }
+          // If the element is a field, we'll append a language code and delta
+          // value to the element id, along with the field items appended
+          // onto the element using the language code and delta values.
+          var id = null;
+          if (element_is_field) {
+            // What's the number of allowed values (cardinality) on this field?
+            // A cardinality of -1 means the field has unlimited values.
+            var cardinality = parseInt(element.field_info_field.cardinality);
+            if (cardinality == -1) {
+              cardinality = 1; // we'll just add one element for now, until we
+                               // figure out how to handle the 'add another
+                               // item' feature.
+            }
+            // Initialize the item collections language code if it hasn't been.
+            if (!form.elements[name][language]) {
+              form.elements[name][language] = {};
+            }
+            // Prepare the item(s) for this element.
+            for (var delta = 0; delta < cardinality; delta++) {
+              // Prepare some item defaults.
+              var item = drupalgap_form_element_item_create(
+                name,
+                form,
+                language,
+                delta
+              );
+              // If the delta for this item hasn't been created on the element,
+              // create it using the default item values. Otherwise, merge the
+              // default values into the pre existing item on the element.
+              if (!form.elements[name][language][delta]) {
+                form.elements[name][language][delta] = item;
+              }
+              else {
+                $.extend(true, form.elements[name][language][delta], item);
+              }
+            }
+          }
+          else {
+            // This element is not a field, setup default options if none
+            // have been provided. Then set the element id.
+            if (!element.options) {
+              form.elements[name].options = {attributes: {}};
+            }
+            else if (!element.options.attributes) {
+              form.elements[name].options.attributes = {};
+            }
+            id = drupalgap_form_get_element_id(name, form.id);
+            form.elements[name].id = id;
+            form.elements[name].options.attributes.id = id;
+          }
+      });
+
+      // Give modules an opportunity to alter the form.
+      module_invoke_all('form_alter', form, null, form_id);
+
+      // Place the assembled form into local storage so _drupalgap_form_submit
+      // will have access to the assembled form.
+      drupalgap_form_local_storage_save(form);
+    }
+    else {
+      var error_msg = 'drupalgap_form_load - '+t('no callback function')+' (' +
+                       function_name + ') '+t('available for form')+' (' + form_id + ')';
+      drupalgap_alert(error_msg);
+    }
+    return form;
+  }
+  catch (error) { console.log('drupalgap_form_load - ' + error); }
+}
+
+/**
+ * Given a form id, this will delete the form from local storage.
+ * If the form isn't in local storage, this returns false.
+ * @param {String} form_id
+ * @return {Object}
+ */
+function drupalgap_form_local_storage_delete(form_id) {
+  try {
+    var result = window.localStorage.removeItem(
+      drupalgap_form_id_local_storage_key(form_id)
+    );
+    return result;
+  }
+  catch (error) {
+    console.log('drupalgap_form_local_storage_delete - ' + error);
+  }
+}
+
+/**
+ * Given a form id, this will load the form from local storage and return it.
+ * If the form isn't in local storage, this returns false.
+ * @param {String} form_id
+ * @return {Object}
+ */
+function drupalgap_form_local_storage_load(form_id) {
+  try {
+    var form = false;
+    form = window.localStorage.getItem(
+      drupalgap_form_id_local_storage_key(form_id)
+    );
+    if (!form) { form = false; }
+    else { form = JSON.parse(form); }
+    return form;
+  }
+  catch (error) { console.log('drupalgap_form_local_storage_load - ' + error); }
+}
+
+/**
+ * Given a form, this will save the form to local storage, overwriting any
+ * previously saved forms.
+ * @param {Object} form
+ */
+function drupalgap_form_local_storage_save(form) {
+  try {
+    window.localStorage.setItem(
+      drupalgap_form_id_local_storage_key(form.id),
+      JSON.stringify(form)
+    );
+  }
+  catch (error) { console.log('drupalgap_form_local_storage_save - ' + error); }
+}
+
+/**
+ * Given a form id, this will return the local storage key used by DrupalGap
+ * to save the assembled form to the device's local storage.
+ * @param {String} form_id
+ * @return {String}
+ */
+function drupalgap_form_id_local_storage_key(form_id) {
+    return 'drupalgap_form_' + form_id;
+}
+
+/**
+ * Optionally use this function as an HTML DOM onkeypress handler, and it will
+ * attempt to listen for the enter key being pressed and submit the form at that
+ * time.
+ * @param {String} form_id
+ * @return {Boolean}
+ */
+function drupalgap_form_onkeypress(form_id) {
+  try {
+    var event = window.event;
+    var charCode = event.which || event.keyCode;
+    if (charCode != '13') { return; }
+    $('#' + form_id + ' button.dg_form_submit_button').click();
+    event.preventDefault();
+    return false;
+  }
+  catch (error) { console.log('drupalgap_form_onkeypress - ' + error); }
+}
+
+/**
  * Handles a drupalgap form's submit button click.
  * @param {String} form_id
  * @return {*}
@@ -3177,7 +3574,7 @@ function _drupalgap_form_submit(form_id) {
     // Load the form from local storage.
     var form = drupalgap_form_local_storage_load(form_id);
     if (!form) {
-      var msg = '_drupalgap_form_submit - failed to load form: ' + form_id;
+      var msg = '_drupalgap_form_submit - '+t('failed to load form')+': ' + form_id;
       drupalgap_alert(msg);
       return false;
     }
@@ -3260,6 +3657,168 @@ function _drupalgap_form_submit(form_id) {
 }
 
 /**
+ * An internal function used by the DrupalGap forms api to validate all the
+ * elements on a form.
+ * @param {Object} form
+ * @param {Object} form_state
+ */
+function _drupalgap_form_validate(form, form_state) {
+  try {
+    $.each(form.elements, function(name, element) {
+        if (name == 'submit') { return; }
+        if (element.required) {
+          var valid = true;
+          var value = null;
+          if (element.is_field) {
+            value = form_state.values[name][language_default()][0];
+          }
+          else { value = form_state.values[name]; }
+          // Check for empty values.
+          if (empty(value)) { valid = false; }
+          // Validate a required select list.
+          else if (
+            element.type == 'select' && element.required && value == ''
+          ) { valid = false; }
+          else if (element.type == 'checkboxes' && element.required) {
+            var has_value = false;
+            $.each(form_state.values[name], function(key, value) {
+                if (value) { has_value = true; return false; }
+            });
+            if (!has_value) { valid = false; }
+          }
+          if (!valid) {
+            var field_title = name;
+            if (element.title) { field_title = element.title; }
+            drupalgap_form_set_error(
+              name,
+              t('The')+' ' + field_title + ' '+t('field is required')+'.'
+            );
+          }
+        }
+    });
+  }
+  catch (error) { console.log('_drupalgap_form_validate - ' + error); }
+}
+
+/**
+ * Given a form, this function iterates over the form's elements and assembles
+ * each element and value and places them into the form state's values. This
+ * is similar to $form_state['values'] in Drupal.
+ * @param {Object} form
+ * @return {Object}
+ */
+function drupalgap_form_state_values_assemble(form) {
+  try {
+    var lng = language_default();
+    var form_state = {'values': {}};
+    $.each(form.elements, function(name, element) {
+      if (name == 'submit') { return; } // Always skip the form 'submit'.
+      var id = null;
+      if (element.is_field) {
+        form_state.values[name] = {};
+        form_state.values[name][lng] = {};
+        var allowed_values = element.field_info_field.cardinality;
+        if (allowed_values == -1) {
+          allowed_values = 1; // Convert unlimited value field to one for now...
+        }
+        for (var delta = 0; delta < allowed_values; delta++) {
+          id = drupalgap_form_get_element_id(name, form.id, lng, delta);
+          form_state.values[name][lng][delta] =
+            _drupalgap_form_state_values_assemble_get_element_value(
+              id,
+              element
+            );
+        }
+      }
+      else {
+        id = drupalgap_form_get_element_id(name, form.id);
+        form_state.values[name] =
+          _drupalgap_form_state_values_assemble_get_element_value(
+            id,
+            element
+          );
+      }
+    });
+    // Attach the form state to drupalgap.form_states keyed by the form id.
+    drupalgap.form_states[form.id] = form_state;
+    return form_state;
+  }
+  catch (error) {
+    console.log('drupalgap_form_state_values_assemble - ' + error);
+  }
+}
+
+/**
+ *
+ * @param {String} id
+ * @param {Object} element
+ * @return {String|Number}
+ */
+function _drupalgap_form_state_values_assemble_get_element_value(id, element) {
+  try {
+    // If a value_callback is specified on the element, call that function to
+    // retrieve the element's value. Ohterwise, we'll use the default techniques
+    // implemented to extract a value for the form state.
+    if (element.value_callback && function_exists(element.value_callback)) {
+      var fn = window[element.value_callback];
+      return fn(id, element);
+    }
+    // Figure out the value, depending on the element type.
+    var value = null;
+    var selector = '';
+    if (element.type == 'radios') {
+      selector = 'input:radio[name="' + id + '"]:checked';
+    }
+    else { selector = '#' + id; }
+    switch (element.type) {
+      case 'checkbox':
+        var _checkbox = $(selector);
+        if ($(_checkbox).is(':checked')) { value = 1; }
+        else { value = 0; }
+        break;
+      case 'checkboxes':
+        // Iterate over each option, and see if it is checked, then pop it onto
+        // the value array. It's possible for values to be updated dynamically
+        // by a developer (i.e. through a pageshow handler), so it isn't safe to
+        // look at the options in local storage. Instead we'll directly iterate
+        // over the element option(s) in the DOM.
+        value = {};
+        var options = $('label[for="' + id + '"]').siblings('.ui-checkbox');
+        $.each(options, function(index, option) {
+            var checkbox = $(option).children('input');
+            var _value = $(checkbox).attr('value');
+            if ($(checkbox).is(':checked')) { value[_value] = _value; }
+            else { value[_value] = 0; }
+        });
+        break;
+      case 'list_boolean':
+        var _checkbox = $(selector);
+        if ($(_checkbox).is(':checked')) { value = $(_checkbox).attr('on'); }
+        else { value = $(_checkbox).attr('off'); }
+        break;
+      case 'list_text':
+        // Radio buttons.
+        if (
+          element.field_info_instance &&
+          element.field_info_instance.widget.type == 'options_buttons'
+        ) {
+          selector = 'input:radio[name="' + id + '"]:checked';
+        }
+        break;
+    }
+    if (value === null) { value = $(selector).val(); }
+    if (typeof value === 'undefined') { value = null; }
+    return value;
+  }
+  catch (error) {
+    console.log(
+      '_drupalgap_form_state_values_assemble_get_element_value - ' +
+      error
+    );
+  }
+}
+
+/**
  * When a service call results in an error, this function is used to extract the
  * request's response form errors into a human readble string and returns it. If
  * there are no form errors, it will return false.
@@ -3301,67 +3860,6 @@ function _drupalgap_form_submit_response_errors(form, form_state, xhr, status,
   catch (error) {
     console.log('_drupalgap_form_submit_response_errors - ' + error);
   }
-}
-
-/**
- * An internal function used by the DrupalGap forms api to validate all the
- * elements on a form.
- * @param {Object} form
- * @param {Object} form_state
- */
-function _drupalgap_form_validate(form, form_state) {
-  try {
-    $.each(form.elements, function(name, element) {
-        if (name == 'submit') { return; }
-        if (element.required) {
-          var valid = true;
-          var value = null;
-          if (element.is_field) {
-            value = form_state.values[name][language_default()][0];
-          }
-          else { value = form_state.values[name]; }
-          // Check for empty values.
-          if (empty(value)) { valid = false; }
-          // Validate a required select list.
-          else if (
-            element.type == 'select' && element.required && value == ''
-          ) { valid = false; }
-          else if (element.type == 'checkboxes' && element.required) {
-            var has_value = false;
-            $.each(form_state.values[name], function(key, value) {
-                if (value) { has_value = true; return false; }
-            });
-            if (!has_value) { valid = false; }
-          }
-          if (!valid) {
-            var field_title = name;
-            if (element.title) { field_title = element.title; }
-            drupalgap_form_set_error(
-              name,
-              'The ' + field_title + ' field is required.'
-            );
-          }
-        }
-    });
-  }
-  catch (error) { console.log('_drupalgap_form_validate - ' + error); }
-}
-
-/**
- * Optionally use this function as an HTML DOM onkeypress handler, and it will
- * attempt to listen for the enter key being pressed and submit the form at that
- * time.
- */
-function drupalgap_form_onkeypress(form_id) {
-  try {
-    var event = window.event;
-    var charCode = event.which || event.keyCode;
-    if (charCode != '13') { return; }
-    $('#' + form_id + ' button.dg_form_submit_button').click();
-    event.preventDefault();
-    return false;
-  }
-  catch (error) { console.log('drupalgap_form_onkeypress - ' + error); }
 }
 
 /**
@@ -3749,13 +4247,12 @@ function drupalgap_goto(path) {
 
     // If the new router path is the same as the current router path and the new
     // path is the same as the current path, we may need to cancel the
-    // navigation attempt (i.e. don't go anywhere), unless...act on it...don't go anywhere, unless it is a
+    // navigation attempt (i.e. don't go anywhere), unless it is a
     // form submission, then continue.
     if (
       router_path == drupalgap_router_path_get() &&
-      drupalgap_path_get() == path
+      path == drupalgap_path_get()
     ) {
-
       // If it's a form submission, we'll continue onward...
       if (options.form_submission) { }
 
@@ -3793,7 +4290,10 @@ function drupalgap_goto(path) {
     // put the path onto the back_path array.
 
     // Save the back path.
-    drupalgap.back_path.push(drupalgap_path_get());
+    var back_paths_to_ignore = ['user/logout', '_reload'];
+    if (!in_array(drupalgap_path_get())) {
+      drupalgap.back_path.push(drupalgap_path_get());
+    }
 
     // Set the current menu path to the path input.
     drupalgap_path_set(path);
@@ -3847,9 +4347,8 @@ function drupalgap_goto(path) {
       }
     }
     else if (typeof options.reloadPage !== 'undefined' && options.reloadPage) {
-      // The page is not in the DOM, and we're being asked to reload it, this
-      // can't happen, so we'll just delete the reloadPage option.
-      console.log('WARNING - drupalgap_goto() asked to reload page not in DOM');
+      // The page is not in the DOM, and we're being asked to reload it, so
+      // we'll just delete the reloadPage option.
       delete options.reloadPage;
     }
 
@@ -3933,7 +4432,7 @@ function drupalgap_goto_generate_page_and_go(
       else {
         drupalgap_alert(
           'drupalgap_goto_generate_page_and_go - ' +
-          'failed to load theme\'s page.tpl.html file'
+          t('failed to load theme\'s page.tpl.html file')
         );
       }
     }
@@ -3943,8 +4442,11 @@ function drupalgap_goto_generate_page_and_go(
   }
 }
 
- /**
- * @deprecated
+/**
+ * Prepares a drupalgap page path.
+ * @deprecated Use _drupalgap_goto_prepare_path() instead.
+ * @param {String} path
+ * @return {String}
  */
 function drupalgap_goto_prepare_path(path) {
   try {
@@ -3980,7 +4482,11 @@ function _drupalgap_goto_prepare_path(path) {
           if (pos == -1) { continue; }
           query = parts[i].split('=');
           if (query.length != 2) { continue; }
-          _GET(decodeURIComponent(query[0]), decodeURIComponent(query[1]), path);
+          _GET(
+            decodeURIComponent(query[0]),
+            decodeURIComponent(query[1]),
+            path
+          );
         }
       }
     }
@@ -3990,7 +4496,7 @@ function _drupalgap_goto_prepare_path(path) {
       if (!drupalgap.settings.front) {
         drupalgap_alert(
           'drupalgap_goto_prepare_path - ' +
-          'no front page specified in settings.js!'
+          t('no front page specified in settings.js!')
         );
         return false;
       }
@@ -4017,7 +4523,7 @@ function _drupalgap_goto_prepare_path(path) {
 function drupalgap_back() {
   try {
     if ($('.ui-page-active').attr('id') == drupalgap.settings.front) {
-      var msg = 'Exit ' + drupalgap.settings.title + '?';
+      var msg = t('Exit')+' ' + drupalgap.settings.title + '?';
       if (drupalgap.settings.exit_message) {
         msg = drupalgap.settings.exit_message;
       }
@@ -4035,9 +4541,16 @@ function drupalgap_back() {
  */
 function _drupalgap_back() {
   try {
+    // @WARNING - any changes here (except the history.back() call) need to be
+    // reflected into the window "navigate" handler below
     drupalgap.back = true;
     history.back();
     drupalgap_path_set(drupalgap.back_path.pop());
+    drupalgap_router_path_set(
+      drupalgap_get_menu_link_router_path(
+        drupalgap_path_get()
+      )
+    );
   }
   catch (error) { console.log('drupalgap_back' + error); }
 }
@@ -4064,18 +4577,27 @@ $(window).on('navigate', function(event, data) {
       // back, forward (or undefined, aka moving from splash to front page)
       var direction = data.state.direction;
       if (direction == 'back' && drupalgap.back_path.length > 0) {
+        // @WARNING - any changes here should be reflected into
+        // _drupalgap_back().
         drupalgap.back = true;
-        drupalgap.path = drupalgap.back_path[drupalgap.back_path.length - 1];
+        drupalgap_path_set(drupalgap.back_path[drupalgap.back_path.length - 1]);
+        drupalgap_router_path_set(
+          drupalgap_get_menu_link_router_path(
+            drupalgap_path_get()
+          )
+        );
       }
     }
 
 });
+
 /**
  * This will return the query string arguments for the page. You may optionally
  * pass in a key to get its value, pass in a key then a value to set the key
  * equal to the value, and you may optionally pass in a third argument to use
  * a specific page id, otherwise DrupalGap will automatically use the
  * appropriate page id.
+ * @return {String|NULL}
  */
 function _GET() {
   try {
@@ -4310,7 +4832,7 @@ function drupalgap_remove_page_from_dom(page_id) {
       // We'll remove the query string, unless we were instructed to leave it.
       if (
         typeof _dg_GET[page_id] !== 'undefined' &&
-        (typeof options.leaveQuery === 'undefined' || !options.leaveQuery) 
+        (typeof options.leaveQuery === 'undefined' || !options.leaveQuery)
       ) { delete _dg_GET[page_id]; }
     }
     else {
@@ -4790,6 +5312,8 @@ function _drupalgap_region_render_zone(zone, region, current_path) {
 /**
  * Given a key (typically a block delta), this will generate a unique ID that
  * can be used for the panel. It will be fused with the current page id.
+ * @param {String} key
+ * @return {String}
  */
 function drupalgap_panel_id(key) {
   try {
@@ -4972,16 +5496,16 @@ function menu_list_system_menus() {
   try {
     var system_menus = {
       'user_menu_anonymous': {
-        'title': 'User menu authenticated'
+        'title': t('User menu authenticated')
       },
       'user_menu_authenticated': {
-        'title': 'User menu authenticated'
+        'title': t('User menu authenticated')
       },
       'main_menu': {
-        'title': 'Main menu'
+        'title': t('Main menu')
       },
       'primary_local_tasks': {
-        'title': 'Primary Local Tasks'
+        'title': t('Primary Local Tasks')
       }
     };
     // Add the menu_name to each menu as a property.
@@ -5431,449 +5955,6 @@ function theme(hook, variables) {
 }
 
 /**
- * Autocomplete global variables. Used to hold onto various global variables
- * needed for an autocomplete.
- */
-// The autocomplete text field input selector.
-var _theme_autocomplete_input_selector = {};
-
-// The autocomplete remote boolean.
-var _theme_autocomplete_remote = {};
-
-// The theme autocomplete variables.
-var _theme_autocomplete_variables = {};
-
-// The theme autocomplete variables.
-var _theme_autocomplete_success_handlers = {};
-
-/**
- * Themes an autocomplete.
- * @param {Object} variables
- * @return {String}
- */
-function theme_autocomplete(variables) {
-  try {
-    var html = '';
-
-    // We need to have a unique identifier for this autocomplete. If it is a
-    // field, use the field name. Otherwise use the id attribute if it is
-    // provided or generate a random one. Then finally attach the autocomplete
-    // id to the variables so it can be passed along.
-    var autocomplete_id = null;
-    if (typeof variables.field_info_field !== 'undefined') {
-      autocomplete_id = variables.field_info_field.field_name;
-    }
-    else if (typeof variables.attributes.id !== 'undefined') {
-      autocomplete_id = variables.attributes.id;
-    }
-    else { autocomplete_id = user_password(); }
-    variables.autocomplete_id = autocomplete_id;
-
-    // Hold onto a copy of the variables.
-    _theme_autocomplete_variables[autocomplete_id] = variables;
-
-    // Are we dealing with a remote data set?
-    var remote = false;
-    if (variables.remote) { remote = true; }
-    variables.remote = remote;
-    _theme_autocomplete_remote[autocomplete_id] = variables.remote;
-
-    // Make sure we have an id to use on the list.
-    var id = null;
-    if (variables.attributes.id) { id = variables.attributes.id; }
-    else {
-      id = 'autocomplete_' + user_password();
-      variables.attributes.id = id;
-    }
-
-    // We need a hidden input to hold the value. If a default value
-    // was provided by a form element, use it.
-    var hidden_attributes = { id: id };
-    if (
-      variables.element &&
-      typeof variables.element.default_value !== 'undefined'
-    ) { hidden_attributes.value = variables.element.default_value; }
-    html += theme('hidden', { attributes: hidden_attributes });
-
-    // Now we need an id for the list.
-    var list_id = id + '-list';
-
-    // Build the widget variables.
-    var widget = {
-      attributes: {
-        'id': list_id,
-        'data-role': 'listview',
-        'data-filter': 'true',
-        'data-inset': 'true',
-        'data-filter-placeholder': '...'
-      }
-    };
-
-    // Handle a remote data set.
-    var js = '';
-    if (variables.remote) {
-      widget.items = [];
-      // We have a remote data set.
-      js += '<script type="text/javascript">' +
-        '$("#' + list_id + '").on("filterablebeforefilter", function(e, d) { ' +
-          '_theme_autocomplete(this, e, d, "' + autocomplete_id + '"); ' +
-        '});' +
-      '</script>';
-    }
-    else {
-      // Prepare the items then set the data filter reveal attribute.
-      widget.items = _theme_autocomplete_prepare_items(variables);
-      widget.attributes['data-filter-reveal'] = true;
-    }
-
-    // Save a reference to the autocomplete text field input.
-    var selector = '#' + drupalgap_get_page_id() +
-      ' #' + id + ' + form.ui-filterable' +
-      ' input[data-type="search"]';
-    js += '<script type="text/javascript">' +
-      '_theme_autocomplete_input_selector["' + autocomplete_id + '"] = \'' +
-        selector +
-      '\';' +
-    '</script>';
-
-    // Theme the list and add the js to it, then return the html.
-    html += theme('item_list', widget);
-    html += js;
-    return html;
-  }
-  catch (error) { console.log('theme_autocomplete - ' + error); }
-}
-
-/**
- * An internal function used to handle remote data for an autocomplete.
- * @param {Object} list The unordered list that displays the items.
- * @param {Object} e
- * @param {Object} data
- * @param {String} autocomplete_id
- */
-function _theme_autocomplete(list, e, data, autocomplete_id) {
-  try {
-    var autocomplete = _theme_autocomplete_variables[autocomplete_id];
-    // Make sure a filter is present.
-    if (typeof autocomplete.filter === 'undefined') {
-      console.log(
-        '_theme_autocomplete - A "filter" was not supplied.'
-      );
-      return;
-    }
-
-    // Make sure a value and/or label has been supplied so we know how to render
-    // the items in the autocomplete list.
-    var value_provided =
-      typeof autocomplete.value !== 'undefined' ? true : false;
-    var label_provided =
-      typeof autocomplete.label !== 'undefined' ? true : false;
-    if (!value_provided && !label_provided) {
-      console.log(
-        '_theme_autocomplete - A "value" and/or "label" was not supplied.'
-      );
-      return;
-    }
-    else {
-      // We have a value and/or label. If one isn't provided, set it equal to
-      // the other.
-      if (!value_provided) { autocomplete.value = autocomplete.label; }
-      else if (!label_provided) { autocomplete.label = autocomplete.value; }
-    }
-    // Setup the vars to handle this widget.
-    var $ul = $(list),
-        $input = $(data.input),
-        value = $input.val(),
-        html = '';
-    // Clear the list.
-    $ul.html('');
-    // If a value has been input, start the autocomplete search.
-    if (value && value.length > 0) {
-      // Show the loader icon.
-      $ul.html('<li><div class="ui-loader">' +
-        '<span class="ui-icon ui-icon-loading"></span>' +
-        '</div></li>');
-      $ul.listview('refresh');
-
-      // Let's first build the success handler that will place the items into
-      // the autocomplete list.
-      _theme_autocomplete_success_handlers[autocomplete_id] = function(
-        _autocomplete_id, result_items, _wrapped, _child) {
-        try {
-
-          // If there are no results, and then if an empty callback handler was
-          // provided, call it.
-          // empty callback handler, then call it and return.
-          if (result_items.length == 0) {
-            if (autocomplete.empty_callback) {
-              var fn = window[autocomplete.empty_callback];
-              fn(value);
-            }
-          }
-          else {
-
-            // Convert the result into an items array for a list. Each item will
-            // be a JSON object with a "value" and "label" properties.
-            var items = [];
-            var _value = autocomplete.value;
-            var _label = autocomplete.label;
-            $.each(result_items, function(index, object) {
-                var _item = null;
-                if (_wrapped) { _item = object[_child]; }
-                else { _item = object; }
-                var item = {
-                  value: _item[_value],
-                  label: _item[_label]
-                };
-                items.push(item);
-            });
-
-            // Now render the items, add them to list and refresh the list.
-            if (items.length != 0) {
-              autocomplete.items = items;
-              var _items = _theme_autocomplete_prepare_items(autocomplete);
-              $.each(_items, function(index, item) {
-                html += '<li>' + item + '</li>';
-              });
-              $ul.html(html);
-              $ul.listview('refresh');
-              $ul.trigger('updatelayout');
-            }
-          }
-
-          // Anybody want to act on the completion of the autocomplete?
-          if (autocomplete.finish_callback) {
-            var fn = window[autocomplete.finish_callback];
-            fn(value);
-          }
-
-        }
-        catch (error) {
-          console.log('_theme_autocomplete_success_handlers[' +
-            _autocomplete_id +
-          '] - ' + error);
-        }
-      };
-
-      // Depending on the handler, build the path and call the Drupal site for
-      // the data. If it's a custom path, see if a handler was provided,
-      // otherwise just default to views.
-      var handler = null;
-      if (autocomplete.custom) {
-        if (autocomplete.handler) { handler = autocomplete.handler; }
-        else { handler = 'views'; }
-      }
-      else {
-        handler = autocomplete.field_info_field.settings.handler;
-      }
-      switch (handler) {
-
-        // Views (and Organic Groups)
-        case 'views':
-        case 'og':
-          // Prepare the path to the view.
-          var path = autocomplete.path + '?' + autocomplete.filter + '=' +
-            encodeURIComponent(value);
-          // Any extra params to send along?
-          if (autocomplete.params) { path += '&' + autocomplete.params; }
-
-          // Retrieve JSON results. Keep in mind, we use this for retrieving
-          // Views JSON results and custom hook_menu() path results in Drupal.
-          views_datasource_get_view_result(path, {
-              success: function(results) {
-                // If this was a custom path, don't use a wrapper around the
-                // results like the one used by Views Datasource.
-                var wrapped = true;
-                if (autocomplete.custom) { wrapped = false; }
-
-                // Extract the result items based on the presence of the wrapper
-                // or not.
-                var result_items = null;
-                if (wrapped) { result_items = results[results.view.root]; }
-                else { result_items = results; }
-
-                // Finally call the sucess handler.
-                var fn = _theme_autocomplete_success_handlers[autocomplete_id];
-                fn(autocomplete_id, result_items, wrapped, results.view.child);
-              }
-          });
-          break;
-
-        // Simple entity selection mode, use the Index resource for the entity
-        // type.
-        case 'base':
-          var field_settings =
-            autocomplete.field_info_field.settings;
-          var index_resource = field_settings.target_type + '_index';
-          if (!drupalgap_function_exists(index_resource)) {
-            console.log('WARNING - _theme_autocomplete - ' +
-              index_resource + '() does not exist!'
-            );
-            return;
-          }
-          var options = {
-            fields: ['nid', 'title'],
-            parameters: {
-              title: '%' + value + '%'
-            },
-            parameters_op: {
-              title: 'like'
-            }
-          };
-          $.each(
-            field_settings.handler_settings.target_bundles,
-            function(bundle, name) {
-              options.parameters.type = bundle;
-              // @TODO allow multiple bundles to be indexed.
-              return false;
-          });
-          var fn = window[index_resource];
-          fn(options, {
-              success: function(results) {
-                var fn = _theme_autocomplete_success_handlers[autocomplete_id];
-                fn(autocomplete_id, results, false);
-              }
-          });
-          break;
-
-        // An entity index resource call. Figure out which entity type index
-        // to call, and build a default query if one wasn't provided.
-        case 'index':
-          if (!autocomplete.entity_type) {
-            console.log(
-              'WARNING - _theme_autocomplete - no entity_type provided'
-            );
-            return;
-          }
-          var function_name = autocomplete.entity_type + '_index';
-          var fn = window[function_name];
-          var query = null;
-          if (autocomplete.query) { query = autocomplete.query; }
-          else {
-            query = {
-              parameters: { },
-              parameters_op: { }
-            };
-            var fields = [];
-            switch (autocomplete.entity_type) {
-              case 'node':
-                fields = ['nid', 'title'];
-                break;
-              case 'taxonomy_term':
-                fields = ['tid', 'name'];
-                if (autocomplete.vid) {
-                  query.parameters['vid'] = autocomplete.vid;
-                }
-                break;
-            }
-            query.fields = fields;
-            query.parameters[autocomplete.filter] = '%' + value + '%';
-            query.parameters_op[autocomplete.filter] = 'like';
-          }
-          fn.apply(null, [query, {
-              success: function(results) {
-                var fn = _theme_autocomplete_success_handlers[autocomplete_id];
-                fn(autocomplete_id, results, false, null);
-              }
-          }]);
-          break;
-
-        // The default handler...
-        default:
-
-          // If we made it this far, and don't have a handler, then warn the
-          // developer.
-          if (!handler) {
-            console.log('WARNING - _theme_autocomplete - no handler provided');
-            return;
-          }
-
-          break;
-
-      }
-
-    }
-  }
-  catch (error) { console.log('_theme_autocomplete - ' + error); }
-}
-
-/**
- * An internal function used to prepare the items for an autocomplete list.
- * @param {Object} variables
- * @return {*}
- */
-function _theme_autocomplete_prepare_items(variables) {
-  try {
-    // Make sure we have an items array.
-    var items = [];
-    if (variables.items) { items = variables.items; }
-
-    // Prepare the items, and return them.
-    var _items = [];
-    if (items.length > 0) {
-      $.each(items, function(index, item) {
-          var value = '';
-          var label = '';
-          if (typeof item === 'string') {
-            value = item;
-            label = item;
-          }
-          else {
-            value = item.value;
-            label = item.label;
-          }
-          var options = {
-            attributes: {
-              value: value,
-              onclick: '_theme_autocomplete_click(\'' +
-                variables.attributes.id +
-              '\', this, \'' + variables.autocomplete_id + '\')'
-            }
-          };
-          var _item = l(label, null, options);
-          _items.push(_item);
-      });
-    }
-    return _items;
-  }
-  catch (error) { console.log('_theme_autocomplete_prepare_items - ' + error); }
-}
-
-/**
- * An internal function used to handle clicks on items in autocomplete results.
- * @param {String} id The id of the hidden input that holds the value.
- * @param {Object} item The list item anchor that was just clicked.
- * @param {String} autocomplete_id
- */
-function _theme_autocomplete_click(id, item, autocomplete_id) {
-  try {
-    // Set the hidden input with the value, and the text field with the text.
-    var list_id = id + '-list';
-    $('#' + id).val($(item).attr('value'));
-    $(_theme_autocomplete_input_selector[autocomplete_id]).val($(item).html());
-    if (_theme_autocomplete_remote[autocomplete_id]) {
-      $('#' + list_id).html('');
-    }
-    else {
-      $('#' + list_id + ' li').addClass('ui-screen-hidden');
-      $('#' + list_id).listview('refresh');
-    }
-    // Now fire the item onclick handler, if one was provided.
-    if (
-      _theme_autocomplete_variables[autocomplete_id].item_onclick &&
-      drupalgap_function_exists(
-        _theme_autocomplete_variables[autocomplete_id].item_onclick
-      )
-    ) {
-      var fn =
-        window[_theme_autocomplete_variables[autocomplete_id].item_onclick];
-      fn(id, $(item));
-    }
-  }
-  catch (error) { console.log('_theme_autocomplete_click - ' + error); }
-}
-
-/**
  * Themes a button.
  * @param {Object} variables
  * @return {String}
@@ -6212,7 +6293,7 @@ function theme_link(variables) {
 function theme_logout(variables) {
   try {
     return bl(
-      'Logout',
+      t('Logout'),
       'user/logout',
       {
         attributes: {
@@ -6389,7 +6470,7 @@ function _drupalgap_page_title_pageshow_success(title) {
 function comment_menu() {
     var items = {
       'comment/%': {
-        title: _('Comment'),
+        title: t('Comment'),
         page_callback: 'comment_page_view',
         page_arguments: [1],
         pageshow: 'comment_page_view_pageshow',
@@ -6397,12 +6478,12 @@ function comment_menu() {
         title_arguments: [1]
       },
       'comment/%/view': {
-        title: _('View'),
+        title: t('View'),
         type: 'MENU_DEFAULT_LOCAL_TASK',
         weight: -10
       },
       'comment/%/edit': {
-        title: _('Edit'),
+        title: t('Edit'),
         page_callback: 'entity_page_edit',
         pageshow: 'entity_page_edit_pageshow',
         page_arguments: ['comment_edit', 'comment', 1],
@@ -6478,7 +6559,7 @@ function comment_page_view(cid) {
       };
       return content;
     }
-    else { drupalgap_error('No comment id provided!'); }
+    else { drupalgap_error(t('No comment id provided!')); }
   }
   catch (error) { console.log('comment_page_view - ' + error); }
 }
@@ -6572,14 +6653,14 @@ function comment_edit(form, form_state, comment, node) {
     // Add submit to form.
     form.elements.submit = {
       'type': 'submit',
-      'value': _('Save')
+      'value': t('Save')
     };
 
     // Add cancel and delete button to form if we're editing a comment. Also
     // figure out a form title to use in the prefix.
-    var form_title = _('Add comment');
+    var form_title = t('Add comment');
     if (comment && comment.cid) {
-      form_title = _('Edit comment');
+      form_title = t('Edit comment');
       form.buttons['cancel'] = drupalgap_form_cancel_button();
       form.buttons['delete'] =
         drupalgap_entity_edit_form_delete_button('comment', comment.cid);
@@ -6635,7 +6716,7 @@ function comment_services_postprocess(options, result) {
                     $(container).append(
                       theme('comment', { comment: comment })
                     ).trigger('create');
-                    scrollToElemen_('#' + container_id + ' :last-child', 500);
+                    scrollToElement('#' + container_id + ' :last-child', 500);
                     var form_selector = '#' + drupalgap_get_page_id() +
                       ' #comment_edit';
                     drupalgap_form_clear(form_selector);
@@ -6665,7 +6746,7 @@ function theme_comments(variables) {
     var html = '<div ' + drupalgap_attributes(variables.attributes) + '>';
     // Show a comments title if there are any comments.
     if (variables.node.comment_count > 0) {
-      html += _('<h2 class="comments-title">Comments</h2>');
+      html += '<h2 class="comments-title">Comments</h2>';
     }
     // If the comments are already rendered, show them.
     if (variables.comments) { html += variables.comments; }
@@ -6702,7 +6783,7 @@ function theme_comment(variables) {
     }
     // Comment date.
     var created = new Date(comment.created * 1000);
-    created = created.toLocaleDateString() + _(' at ') +
+    created = created.toLocaleDateString() + ' at ' +
       created.toLocaleTimeString();
     // Append comment extra fields and content. The user info will be rendered
     // as a list item link.
@@ -6722,7 +6803,7 @@ function theme_comment(variables) {
       (user_access('edit own comments') && comment.uid == Drupal.user.uid)
     ) {
       html += theme('button_link', {
-          text: _('Edit'),
+          text: t('Edit'),
           path: 'comment/' + comment.cid + '/edit',
           attributes: {
             'data-icon': 'gear'
@@ -6744,14 +6825,14 @@ function contact_menu() {
   try {
     var items = {};
     items['contact'] = {
-      title: 'Contact',
+      title: t('Contact'),
       page_callback: 'drupalgap_get_form',
       page_arguments: ['contact_site_form'],
       pageshow: 'contact_site_form_pageshow',
       access_arguments: ['access site-wide contact form']
     };
     items['user/%/contact'] = {
-      title: 'User contact',
+      title: t('User contact'),
       page_callback: 'drupalgap_get_form',
       page_arguments: ['contact_personal_form', 1],
       pageshow: 'contact_personal_form_pageshow',
@@ -6818,39 +6899,39 @@ function contact_personal(options) {
 function contact_site_form(form, form_state) {
   try {
     form.elements.name = {
-      title: 'Your name',
+      title: t('Your name'),
       type: 'textfield',
       required: true
     };
     form.elements.mail = {
-      title: 'Your e-mail address',
+      title: t('Your e-mail address'),
       type: 'email',
       required: true
     };
     form.elements.subject = {
-      title: 'Subject',
+      title: t('Subject'),
       type: 'textfield',
       required: true
     };
     form.elements.category = {
-      title: 'Category',
+      title: t('Category'),
       type: 'select',
       required: true
     };
     form.elements.message = {
-      title: 'Message',
+      title: t('Message'),
       type: 'textarea',
       required: true
     };
     form.elements.copy = {
-      title: 'Send yourself a copy?',
+      title: t('Send yourself a copy?'),
       type: 'checkbox',
       default_value: 0,
       access: false
     };
     form.elements.submit = {
       type: 'submit',
-      value: 'Send message'
+      value: t('Send message')
     };
     // If the user is logged in, set the default values.
     if (Drupal.user.uid != 0) {
@@ -6909,12 +6990,12 @@ function contact_site_form_submit(form, form_state) {
       data: JSON.stringify(data),
       success: function(result) {
         if (result[0]) {
-          drupalgap_alert('Your message has been sent!');
+          drupalgap_alert(t('Your message has been sent!'));
         }
         else {
           drupalgap_alert(
-            'There was a problem sending your message!',
-            { title: 'Error' }
+            t('There was a problem sending your message!'),
+            { title: t('Error') }
           );
         }
         drupalgap_form_clear();
@@ -6946,12 +7027,12 @@ function contact_personal_form(form, form_state, recipient) {
     // @TODO - when providing a personal contact form, make sure the user has
     // their personal contact form enabled.
     form.elements.name = {
-      title: 'Your name',
+      title: t('Your name'),
       type: 'textfield',
       required: true
     };
     form.elements.mail = {
-      title: 'Your e-mail address',
+      title: t('Your e-mail address'),
       type: 'email',
       required: true
     };
@@ -6965,24 +7046,24 @@ function contact_personal_form(form, form_state, recipient) {
       markup: '<div id="' + container_id + '"></div>'
     };
     form.elements.subject = {
-      title: 'Subject',
+      title: t('Subject'),
       type: 'textfield',
       required: true
     };
     form.elements.message = {
-      title: 'Message',
+      title: t('Message'),
       type: 'textarea',
       required: true
     };
     form.elements.copy = {
-      title: 'Send yourself a copy?',
+      title: t('Send yourself a copy?'),
       type: 'checkbox',
       default_value: 0,
       access: false
     };
     form.elements.submit = {
       type: 'submit',
-      value: 'Send message'
+      value: t('Send message')
     };
     // If the user is logged in, set the default values.
     if (Drupal.user.uid != 0) {
@@ -7010,7 +7091,7 @@ function contact_personal_form_pageshow(form, recipient) {
           if (!account.data.contact) {
             $('#' + drupalgap_get_page_id() + ' #drupalgap_form_errors').html(
               "<div class='messages warning'>" +
-                "Sorry, this user's contact form is disabled." +
+                t("Sorry, this user's contact form is disabled.") +
               '</div>'
             );
             return;
@@ -7045,11 +7126,11 @@ function contact_personal_form_submit(form, form_state) {
   contact_personal({
       data: JSON.stringify(data),
       success: function(result) {
-        if (result[0]) { drupalgap_alert('Your message has been sent!'); }
+        if (result[0]) { drupalgap_alert(t('Your message has been sent!')); }
         else {
           drupalgap_alert(
-            'There was a problem sending your message!',
-            { title: 'Error' }
+            t('There was a problem sending your message!'),
+            { title: t('Error') }
           );
         }
         drupalgap_form_clear();
@@ -7133,7 +7214,7 @@ function drupalgap_entity_assemble_data(entity_type, bundle, entity, options) {
  */
 function drupalgap_entity_edit_form_delete_button(entity_type, entity_id) {
     return {
-      title: 'Delete',
+      title: t('Delete'),
       attributes: {
         onclick: "javascript:drupalgap_entity_edit_form_delete_confirmation('" +
           entity_type + "', " + entity_id +
@@ -7155,35 +7236,43 @@ function drupalgap_entity_edit_form_delete_confirmation(entity_type,
   entity_id) {
   try {
     var confirm_msg =
-      'Delete this content, are you sure? This action cannot be undone...';
-    if (confirm(confirm_msg)) {
-      // Change the jQM loader mode to saving.
-      drupalgap.loader = 'deleting';
-      // Set up the api call arguments and success callback.
-      var call_arguments = {};
-      call_arguments.success = function(result) {
-        // Remove the entities page from the DOM, if it exists.
-        var entity_page_path = entity_type + '/' + entity_id;
-        var entity_page_id = drupalgap_get_page_id(entity_page_path);
-        if (drupalgap_page_in_dom(entity_page_id)) {
-          drupalgap_remove_page_from_dom(entity_page_id);
+      t('Delete this content, are you sure? This action cannot be undone...');
+    drupalgap_confirm(confirm_msg, {
+        confirmCallback: function(button) {
+          if (button == 2) { return; }
+          // Change the jQM loader mode to deleting.
+          drupalgap.loader = 'deleting';
+          // Set up the api call arguments and success callback.
+          var call_arguments = {};
+          call_arguments.success = function(result) {
+            // Remove the entities page from the DOM, if it exists.
+            var entity_page_path = entity_type + '/' + entity_id;
+            var entity_page_id = drupalgap_get_page_id(entity_page_path);
+            if (drupalgap_page_in_dom(entity_page_id)) {
+              drupalgap_remove_page_from_dom(entity_page_id);
+            }
+            // Remove the entity from local storage.
+            // @todo - this should be moved to jDrupal.
+            window.localStorage.removeItem(
+              entity_local_storage_key(entity_type, entity_id)
+            );
+            // Go to the front page, unless a form action path was specified.
+            var form = drupalgap_form_local_storage_load('node_edit');
+            var destination = form.action ? form.action : '';
+            drupalgap_goto(destination, {
+              reloadPage: true,
+              form_submission: true
+            });
+          };
+          // Call the delete function.
+          var name = services_get_resource_function_for_entity(
+            entity_type,
+            'delete'
+          );
+          var fn = window[name];
+          fn(entity_id, call_arguments);
         }
-        // Remove the entity from local storage.
-        // @todo - this should be moved to jDrupal.
-        window.localStorage.removeItem(
-          entity_local_storage_key(entity_type, entity_id)
-        );
-        // Go to the front page.
-        drupalgap_goto('', { reloadPage: true, form_submission: true });
-      };
-      // Call the delete function.
-      var name = services_get_resource_function_for_entity(
-        entity_type,
-        'delete'
-      );
-      var fn = window[name];
-      fn(entity_id, call_arguments);
-    }
+    });
   }
   catch (error) {
     console.log('drupalgap_entity_edit_form_delete_confirmation - ' + error);
@@ -7624,8 +7713,16 @@ function drupalgap_entity_form_submit(form, form_state, entity) {
           }
           destination = prefix + '/' + result[primary_key];
         }
+        // Is there a destination URL query parameter overwriting the action?
         if (_GET('destination')) { destination = _GET('destination'); }
-        drupalgap_goto(destination, { form_submission: true });
+        // Set up the default goto options, and use any options provided by the
+        // form.
+        var goto_options = { form_submission: true };
+        if (form.action_options) {
+          goto_options = $.extend({}, goto_options, form.action_options);
+        }
+        // Finally goto our destination.
+        drupalgap_goto(destination, goto_options);
       }
       catch (error) {
         console.log('drupalgap_entity_form_submit - success - ' + error);
@@ -7748,7 +7845,7 @@ function drupalgap_entity_get_core_fields(entity_type, bundle) {
         };
         fields.title = {
           'type': 'textfield',
-          'title': 'Title',
+          'title': t('Title'),
           'required': true,
           'default_value': '',
           'description': ''
@@ -7772,14 +7869,14 @@ function drupalgap_entity_get_core_fields(entity_type, bundle) {
         };
         fields.name = {
           'type': 'textfield',
-          'title': 'Username',
+          'title': t('Username'),
           'required': true,
           'default_value': '',
           'description': ''
         };
         fields.mail = {
           'type': 'email',
-          'title': 'E-mail address',
+          'title': t('E-mail address'),
           'required': true,
           'default_value': '',
           'description': ''
@@ -7787,7 +7884,7 @@ function drupalgap_entity_get_core_fields(entity_type, bundle) {
         fields.picture = {
           'type': 'image',
           'widget_type': 'imagefield_widget',
-          'title': 'Picture',
+          'title': t('Picture'),
           'required': false,
           'value': 'Add Picture'
         };
@@ -7806,13 +7903,13 @@ function drupalgap_entity_get_core_fields(entity_type, bundle) {
           },
           'name': {
             'type': 'textfield',
-            'title': 'Name',
+            'title': t('Name'),
             'required': true,
             'default_value': ''
           },
           'description': {
             'type': 'textarea',
-            'title': 'Description',
+            'title': t('Description'),
             'required': false,
             'default_value': ''
           }
@@ -7827,19 +7924,19 @@ function drupalgap_entity_get_core_fields(entity_type, bundle) {
           },
           'name': {
             'type': 'textfield',
-            'title': 'Name',
+            'title': t('Name'),
             'required': true,
             'default_value': ''
           },
           'machine_name': {
             'type': 'textfield',
-            'title': 'Machine Name',
+            'title': t('Machine Name'),
             'required': true,
             'default_value': ''
           },
           'description': {
             'type': 'textarea',
-            'title': 'Description',
+            'title': t('Description'),
             'required': false,
             'default_value': ''
           }
@@ -8219,6 +8316,16 @@ function drupalgap_field_info_instances_add_to_form(entity_type, bundle,
               }
             }
           }
+
+          // Give module's a chance to alter their own element during the form
+          // build, that way element properties will be saved to local storage
+          // and then available during hook_field_widget_form() and the form
+          // submission process.
+          var fn = field.widget.module + '_field_info_instance_add_to_form';
+          if (drupalgap_function_exists(fn)) {
+            window[fn](entity_type, bundle, form, entity, form.elements[name]);
+          }
+
         }
       });
     }
@@ -8341,6 +8448,15 @@ function list_assemble_form_state_into_field(entity_type, bundle,
           );
         }
         break;
+      case 'list_text':
+        // For radio buttons on the user entity form, field values must be
+        // "flattened", i.e. this field_foo: { und: [ { value: 123 }]}, should be
+        // turned into field_foo: { und: 123 }
+        if (entity_type == 'user' && instance.widget.type == 'options_buttons') {
+          field_key.use_delta = false;
+          field_key.use_wrapper = false;
+        }
+        break;
       default:
         console.log(
           'WARNING: list_assemble_form_state_into_field - unknown type (' +
@@ -8376,7 +8492,7 @@ function list_views_exposed_filter(form, form_state, element, filter, field) {
       // the default value accordingly.
       element.options = filter.value_options;
       if (!element.required) {
-        element.options['All'] = '- Any -';
+        element.options['All'] = '- '+t('Any')+' -';
         if (typeof element.value === 'undefined') { element.value = 'All'; }
       }
     }
@@ -8540,7 +8656,7 @@ function options_field_widget_form(form, form_state, field, instance, langcode,
               // it as the default.  If it is optional, place a "none" option
               // for the user to choose from.
               var text = '- None -';
-              if (items[delta].required) { text = '- Select a value -'; }
+              if (items[delta].required) { text = '- '+t('Select a value')+' -'; }
               items[delta].options[''] = text;
               if (empty(items[delta].value)) { items[delta].value = ''; }
               // If more than one value is allowed, turn it into a multiple
@@ -8611,8 +8727,8 @@ function options_field_widget_form(form, form_state, field, instance, langcode,
           // If the select list is required, add a 'Select' option and set
           // it as the default.  If it is optional, place a "none" option
           // for the user to choose from.
-          var text = '- None -';
-          if (items[delta].required) { text = '- Select a value -'; }
+          var text = '- '+t('None')+' -';
+          if (items[delta].required) { text = '- '+t('Select a value')+' -'; }
           items[delta].children.push({
               type: widget_type,
               attributes: {
@@ -8767,6 +8883,14 @@ function image_field_widget_form(form, form_state, field, instance, langcode,
     // Change the item type to a hidden input to hold the file id.
     items[delta].type = 'hidden';
 
+    // If we're dealing with the user profile 'picture' it isn't a real field,
+    // so we need to spoof some field settings to get the widget to render
+    // properly.
+    // @TODO the field label doesn't show up.
+    if (form.id == 'user_profile_form' && element.name == 'picture') {
+      field = { field_name: 'picture' };
+    }
+
     // If we already have an image for this item, show it.
     if (typeof items[delta].item !== 'undefined' && items[delta].item.fid) {
       // Set the hidden input's value equal to the file id.
@@ -8797,9 +8921,9 @@ function image_field_widget_form(form, form_state, field, instance, langcode,
 
     // Set the default button text, and if a value was provided,
     // overwrite the button text.
-    var button_text = 'Take Photo';
+    var button_text = t('Take Photo');
     if (items[delta].value) { button_text = items[delta].value; }
-    var browse_button_text = 'Browse';
+    var browse_button_text = t('Browse');
     if (items[delta].value2) { browse_button_text = items[delta].value2; }
 
     // Place variables into document for PhoneGap image processing.
@@ -9550,7 +9674,7 @@ function collection_list_page(module, type) {
     var content = {
       'collection_list': {
         'theme': 'jqm_item_list',
-        'title': 'Collection'
+        'title': t('Collection')
       }
     };
     var items = [];
@@ -9640,18 +9764,18 @@ function mvc_install() {
             // on the model fields. These are the mvc_model_system_fields().
             model.fields.id = {
               'type': 'hidden',
-              'title': 'ID',
+              'title': t('ID'),
               'required': false
             };
             model.fields.module = {
               'type': 'hidden',
-              'title': 'Module',
+              'title': t('Module'),
               'required': true,
               'default_value': module
             };
             model.fields.type = {
               'type': 'hidden',
-              'title': 'Model Type',
+              'title': t('Model Type'),
               'required': true,
               'default_value': model_type
             };
@@ -9703,7 +9827,7 @@ function mvc_menu() {
         'page_arguments': [2, 3, 4]
       },
       'mvc/item-add/%/%': {
-        title: 'Add',
+        title: t('Add'),
         page_callback: 'drupalgap_get_form',
         page_arguments: ['item_create_form', 2, 3]
       }
@@ -9768,7 +9892,7 @@ function item_create_form(form, form_state, module, type) {
       form.buttons.cancel = drupalgap_form_cancel_button();
       form.elements.submit = {
         type: 'submit',
-        value: 'Create'
+        value: t('Create')
       };
     }
     return form;
@@ -9911,10 +10035,10 @@ function node_access(node) {
 function node_add_page() {
   try {
     var content = {
-      'header': {'markup': '<h2>Create Content</h2>'},
+      'header': {'markup': '<h2>'+t('Create Content')+'</h2>'},
       'node_type_listing': {
         'theme': 'jqm_item_list',
-        'title': 'Content Types',
+        'title': t('Content Types'),
         'attributes': {'id': 'node_type_listing_items'}
       }
     };
@@ -9954,7 +10078,7 @@ function node_add_page_by_type(type) {
  */
 function node_add_page_by_type_title(callback, type) {
   try {
-    var title = 'Create ' + drupalgap.content_types_list[type].name;
+    var title = t('Create')+' ' + drupalgap.content_types_list[type].name;
     return callback.call(null, title);
   }
   catch (error) { console.log('node_add_page_by_type_title - ' + error); }
@@ -9982,7 +10106,7 @@ function node_edit(form, form_state, node) {
     // Add submit to form.
     form.elements.submit = {
       'type': 'submit',
-      'value': 'Save'
+      'value': t('Save')
     };
 
     // Add cancel button to form.
@@ -10019,16 +10143,16 @@ function node_edit_submit(form, form_state) {
 function node_menu() {
     var items = {
       'node': {
-        'title': 'Content',
+        'title': t('Content'),
         'page_callback': 'node_page',
         'pageshow': 'node_page_pageshow'
       },
       'node/add': {
-        'title': 'Add content',
+        'title': t('Add content'),
         'page_callback': 'node_add_page'
       },
       'node/add/%': {
-        title: 'Add content',
+        title: t('Add content'),
         title_callback: 'node_add_page_by_type_title',
         title_arguments: [2],
         page_callback: 'node_add_page_by_type',
@@ -10036,7 +10160,7 @@ function node_menu() {
         options: { reloadPage: true }
       },
       'node/%': {
-        'title': 'Node',
+        'title': t('Node'),
         'page_callback': 'node_page_view',
         'page_arguments': [1],
         'pageshow': 'node_page_view_pageshow',
@@ -10044,12 +10168,12 @@ function node_menu() {
         'title_arguments': [1]
       },
       'node/%/view': {
-        'title': 'View',
+        'title': t('View'),
         'type': 'MENU_DEFAULT_LOCAL_TASK',
         'weight': -10
       },
       'node/%/edit': {
-        'title': 'Edit',
+        'title': t('Edit'),
         'page_callback': 'entity_page_edit',
         'pageshow': 'entity_page_edit_pageshow',
         'page_arguments': ['node_edit', 'node', 1],
@@ -10072,11 +10196,11 @@ function node_page() {
       'create_content': {
         'theme': 'button_link',
         'path': 'node/add',
-        'text': 'Create Content'
+        'text': t('Create Content')
       },
       'node_listing': {
         'theme': 'jqm_item_list',
-        'title': 'Content List',
+        'title': t('Content List'),
         'items': [],
         'attributes': {'id': 'node_listing_items'}
       }
@@ -10119,7 +10243,7 @@ function node_page_view(nid) {
       };
       return content;
     }
-    else { drupalgap_error('No node id provided!'); }
+    else { drupalgap_error(t('No node id provided!')); }
   }
   catch (error) { console.log('node_page_view - ' + error); }
 }
@@ -10329,7 +10453,7 @@ function search_menu() {
   try {
     var items = {};
     items['search/%/%'] = {
-      title: 'Search',
+      title: t('Search'),
       'page_callback': 'drupalgap_get_form',
       'pageshow': 'search_form_pageshow',
       'page_arguments': ['search_form'],
@@ -10399,13 +10523,13 @@ function search_form(form, form_state) {
     };
     form.elements.keys = {
       type: 'textfield',
-      title: 'Enter your keywords',
+      title: t('Enter your keywords'),
       required: true,
       default_value: keys ? keys : ''
     };
     form.elements.submit = {
       type: 'submit',
-      value: 'Go',
+      value: t('Go'),
       options: {
         attributes: {
           'data-icon': 'search'
@@ -10413,7 +10537,7 @@ function search_form(form, form_state) {
       }
     };
     form.suffix += theme('jqm_item_list', {
-        title: 'Search results',
+        title: t('Search results'),
         items: [],
         options: {
           attributes: {
@@ -10634,6 +10758,7 @@ function drupalgap_services_rss_extract_items(data) {
 }
 
 var _system_reload_page = null;
+var _system_reload_messages = null;
 
 /**
  * Implements hook_block_info().
@@ -10729,7 +10854,7 @@ function system_block_view(delta) {
         return '<h1 id="' + title_id + '"></h1>';
         break;
       case 'powered_by':
-        return '<p style="text-align: center;">Powered by: ' +
+        return '<p style="text-align: center;">'+t('Powered by')+': ' +
           l('DrupalGap', 'http://www.drupalgap.org', {InAppBrowser: true}) +
         '</p>';
         break;
@@ -10751,28 +10876,28 @@ function system_block_view(delta) {
 function system_menu() {
     var items = {
       'dashboard': {
-        'title': 'Dashboard',
+        'title': t('Dashboard'),
         'page_callback': 'system_dashboard_page'
       },
       'error': {
-        'title': 'Error',
+        'title': t('Error'),
         'page_callback': 'system_error_page'
       },
       'offline': {
-        'title': 'Offline',
+        'title': t('Offline'),
         'page_callback': 'system_offline_page'
       },
       '401': {
-        title: '401 - Not Authorized',
+        title: '401 - '+t('Not Authorized'),
         page_callback: 'system_401_page'
       },
       '404': {
-        title: '404 - Not Found',
+        title: '404 - '+t('Not Found'),
         page_callback: 'system_404_page'
       }
     };
     items['_reload'] = {
-      title: 'Reloading...',
+      title: t('Reloading')+'...',
       page_callback: 'system_reload_page',
       pageshow: 'system_reload_pageshow'
     };
@@ -10785,7 +10910,7 @@ function system_menu() {
  * @return {String}
  */
 function system_401_page(path) {
-  return 'Sorry, you are not authorized to view this page.';
+  return t('Sorry, you are not authorized to view this page.');
 }
 
 /**
@@ -10794,24 +10919,41 @@ function system_401_page(path) {
  * @return {String}
  */
 function system_404_page(path) {
-  return 'Sorry, the page you requested was not found.';
+  return t('Sorry, the page you requested was not found.');
 }
 
 /**
- *
+ * The page callback for the reload page.
+ * @return {String}
  */
 function system_reload_page() {
   try {
+    // Set aside any messages, then return an empty page.
+    var messages = drupalgap_get_messages();
+    if (!empty(messages)) {
+      _system_reload_messages = messages.slice();
+      drupalgap_set_messages([]);
+    }
     return '';
   }
   catch (error) { console.log('system_reload_page - ' + error); }
 }
 
 /**
- *
+ * The pageshow callback for the reload page.
  */
 function system_reload_pageshow() {
   try {
+    // Set any messages that were set aside.
+    if (_system_reload_messages && !empty(_system_reload_messages)) {
+      for (var i = 0; i < _system_reload_messages.length; i++) {
+        drupalgap_set_message(
+          _system_reload_messages[i].message,
+          _system_reload_messages[i].type
+        );
+      }
+      _system_reload_messages = null;
+    }
     drupalgap_loading_message_show();
   }
   catch (error) { console.log('system_reload_pageshow - ' + error); }
@@ -10819,6 +10961,7 @@ function system_reload_pageshow() {
 
 /**
  * Implements hook_system_drupalgap_goto_post_process().
+ * @param {String} path
  */
 function system_drupalgap_goto_post_process(path) {
   try {
@@ -10853,9 +10996,9 @@ function system_dashboard_page() {
       '</h4>'
     };
     content.welcome = {
-      markup: '<h2 style="text-align: center;">Welcome to DrupalGap</h2>' +
+      markup: '<h2 style="text-align: center;">'+t('Welcome to DrupalGap')+'</h2>' +
         '<p style="text-align: center;">' +
-          'The open source application development kit for Drupal!' +
+          t('The open source application development kit for Drupal!') +
         '</p>'
     };
     if (drupalgap.settings.logo) {
@@ -10867,13 +11010,13 @@ function system_dashboard_page() {
     }
     content.get_started = {
       theme: 'button_link',
-      text: 'Getting Started Guide',
+      text: t('Getting Started Guide'),
       path: 'http://www.drupalgap.org/get-started',
       options: {InAppBrowser: true}
     };
     content.support = {
       theme: 'button_link',
-      text: 'Support',
+      text: t('Support'),
       path: 'http://www.drupalgap.org/support',
       options: {InAppBrowser: true}
     };
@@ -10889,7 +11032,7 @@ function system_dashboard_page() {
 function system_error_page() {
     var content = {
       info: {
-        markup: '<p>An unexpected error has occurred!</p>'
+        markup: '<p>'+t('An unexpected error has occurred!')+'</p>'
       }
     };
     return content;
@@ -10903,19 +11046,19 @@ function system_offline_page() {
   try {
     var content = {
       'message': {
-        'markup': '<h2>Failed Connection</h2>' +
-          "<p>Oops! We couldn't connect to:</p>" +
+        'markup': '<h2>'+t('Failed Connection')+'</h2>' +
+          "<p>"+t("Oops! We couldn't connect to")+":</p>" +
           '<p>' + Drupal.settings.site_path + '</p>'
       },
       'try_again': {
         'theme': 'button',
-        'text': 'Try Again',
+        'text': t('Try Again'),
         'attributes': {
           'onclick': 'javascript:offline_try_again();'
         }
       },
       'footer': {
-        'markup': "<p>Check your device's network settings and try again.</p>"
+        'markup': "<p>"+t("Check your device's network settings and try again.")+"</p>"
       }
     };
     return content;
@@ -10940,7 +11083,7 @@ function offline_try_again() {
       });
     }
     else {
-      var msg = 'Sorry, no connection found! (' + connection + ')';
+      var msg = t('Sorry, no connection found!')+' (' + connection + ')';
       drupalgap_alert(msg, {
           title: 'Offline'
       });
@@ -10972,7 +11115,7 @@ function system_settings_form(form, form_state) {
     if (!form.elements.submit) {
       form.elements.submit = {
         type: 'submit',
-        value: 'Save configuration'
+        value: t('Save configuration')
       };
     }
     // Add cancel button to form if one isn't present.
@@ -11088,7 +11231,7 @@ function user_listing() {
     var content = {
       'user_listing': {
         'theme': 'jqm_item_list',
-        'title': _('Users'),
+        'title': t('Users'),
         'items': [],
         'attributes': {'id': 'user_listing_items'}
       }
@@ -11124,7 +11267,7 @@ function user_listing_pageshow() {
  * @return {String}
  */
 function user_logout_callback() {
-  return _('<p>Logging out...</p>');
+  return '<p>'+t('Logging out')+'...</p>';
 }
 
 /**
@@ -11152,26 +11295,26 @@ function user_menu() {
         'page_callback': 'user_page'
       },
       'user/login': {
-        'title': _('Login'),
+        'title': t('Login'),
         'page_callback': 'drupalgap_get_form',
         'page_arguments': ['user_login_form'],
         options: {reloadPage: true}
       },
       'user/logout': {
-        'title': _('Logout'),
+        'title': t('Logout'),
         'page_callback': 'user_logout_callback',
         'pagechange': 'user_logout_pagechange',
         options: {reloadPage: true}
       },
       'user/register': {
-        'title': _('Register'),
+        'title': t('Register'),
         'page_callback': 'drupalgap_get_form',
         'page_arguments': ['user_register_form'],
         'access_callback': 'user_register_access',
         options: {reloadPage: true}
       },
       'user/%': {
-        title: _('My account'),
+        title: t('My account'),
         title_callback: 'user_view_title',
         title_arguments: [1],
         page_callback: 'user_view',
@@ -11179,12 +11322,12 @@ function user_menu() {
         page_arguments: [1]
       },
       'user/%/view': {
-        'title': _('View'),
+        'title': t('View'),
         'type': 'MENU_DEFAULT_LOCAL_TASK',
         'weight': -10
       },
       'user/%/edit': {
-        'title': _('Edit'),
+        'title': t('Edit'),
         'page_callback': 'entity_page_edit',
         'pageshow': 'entity_page_edit_pageshow',
         'page_arguments': ['user_profile_form', 'user', 1],
@@ -11195,14 +11338,14 @@ function user_menu() {
         options: {reloadPage: true}
       },
       'user-listing': {
-        'title': _('Users'),
+        'title': t('Users'),
         'page_callback': 'user_listing',
         'access_arguments': ['access user profiles'],
         'pageshow': 'user_listing_pageshow'
       }
     };
     items['user/password'] = {
-      title: _('Request new password'),
+      title: t('Request new password'),
       page_callback: 'drupalgap_get_form',
       page_arguments: ['user_pass_form']
     };
@@ -11322,8 +11465,8 @@ function user_view_pageshow(uid) {
               'name': {'markup': account.name},
               'created': {
                 markup:
-                _('<div class="user_profile_history"><h3>History</h3>') +
-                _('<dl><dt>Member since</td></dt><dd>') +
+                '<div class="user_profile_history"><h3>'+t('History')+'</h3>' +
+                '<dl><dt>'+t('Member since')+'</td></dt><dd>' +
                   (new Date(parseInt(account.created) * 1000)).toDateString() +
                 '</dd></div>'
               }
@@ -11392,6 +11535,7 @@ function drupalgap_user_has_role(role) {
   }
   catch (error) { console.log('drupalgap_user_has_role - ' + error); }
 }
+
 /**
  * The user login form.
  * @param {Object} form
@@ -11404,13 +11548,13 @@ function user_login_form(form, form_state) {
     form.bundle = null;
     form.elements.name = {
       type: 'textfield',
-      title: _('Username'),
+      title: t('Username'),
       title_placeholder: true,
       required: true
     };
     form.elements.pass = {
       type: 'password',
-      title: _('Password'),
+      title: t('Password'),
       title_placeholder: true,
       required: true,
       attributes: {
@@ -11419,18 +11563,18 @@ function user_login_form(form, form_state) {
     };
     form.elements.submit = {
       type: 'submit',
-      value: 'Login'
+      value: t('Login')
     };
     if (user_register_access()) {
       form.buttons['create_new_account'] = {
-        title: _('Create new account'),
+        title: t('Create new account'),
         attributes: {
           onclick: "drupalgap_goto('user/register')"
         }
       };
     }
     form.buttons['forgot_password'] = {
-      title: _('Request new password'),
+      title: t('Request new password'),
         attributes: {
           onclick: "drupalgap_goto('user/password')"
         }
@@ -11468,15 +11612,15 @@ function user_register_form(form, form_state) {
     form.bundle = null;
     form.elements.name = {
       type: 'textfield',
-      title: _('Username'),
+      title: t('Username'),
       title_placeholder: true,
       required: true,
-      description: _('Spaces are allowed; punctuation is not allowed except ') +
-        _('for periods, hyphens, apostrophes, and underscores.')
+      description: t('Spaces are allowed; punctuation is not allowed except ' +
+        'for periods, hyphens, apostrophes, and underscores.')
     };
     form.elements.mail = {
       type: 'email',
-      title: _('E-mail address'),
+      title: t('E-mail address'),
       title_placeholder: true,
       required: true
     };
@@ -11485,19 +11629,19 @@ function user_register_form(form, form_state) {
     if (!drupalgap.site_settings.user_email_verification) {
       form.elements.conf_mail = {
         type: 'email',
-        title: _('Confirm e-mail address'),
+        title: t('Confirm e-mail address'),
         title_placeholder: true,
         required: true
       };
       form.elements.pass = {
         type: 'password',
-        title: _('Password'),
+        title: t('Password'),
         title_placeholder: true,
         required: true
       };
       form.elements.pass2 = {
         type: 'password',
-        title: _('Confirm password'),
+        title: t('Confirm password'),
         title_placeholder: true,
         required: true
       };
@@ -11507,11 +11651,11 @@ function user_register_form(form, form_state) {
     drupalgap_field_info_instances_add_to_form('user', null, form, null);
     // Add registration messages to form.
     form.user_register = {
-      'user_mail_register_no_approval_required_body': _('Registration complete!'),
+      'user_mail_register_no_approval_required_body': t('Registration complete!'),
       'user_mail_register_pending_approval_required_body':
-        _('Registration complete, waiting for administrator approval.'),
+        t('Registration complete, waiting for administrator approval.'),
       'user_mail_register_email_verification_body':
-        _('Registration complete, check your e-mail inbox to verify the account.')
+        t('Registration complete, check your e-mail inbox to verify the account.')
     };
     // Set the auto login boolean. This only happens when the site's account
     // settings require no e-mail verification. Others can stop this from
@@ -11520,7 +11664,7 @@ function user_register_form(form, form_state) {
     // Add submit button.
     form.elements.submit = {
       'type': 'submit',
-      'value': 'Create new account'
+      'value': t('Create new account')
     };
     return form;
   }
@@ -11537,12 +11681,12 @@ function user_register_form_validate(form, form_state) {
     // If e-mail verification is not required, make sure the passwords match.
     if (!drupalgap.site_settings.user_email_verification &&
       form_state.values.pass != form_state.values.pass2) {
-      drupalgap_form_set_error('pass', _('Passwords do not match!'));
+      drupalgap_form_set_error('pass', t('Passwords do not match!'));
     }
     // If there are two e-mail address fields on the form, make sure they match.
     if (!empty(form_state.values.mail) && !empty(form_state.values.conf_mail) &&
       form_state.values.mail != form_state.values.conf_mail
-    ) { drupalgap_form_set_error('mail', _('E-mail addresses do not match!')); }
+    ) { drupalgap_form_set_error('mail', t('E-mail addresses do not match!')); }
   }
   catch (error) {
     console.log('user_register_form_validate - ' + error);
@@ -11559,19 +11703,25 @@ function user_register_form_submit(form, form_state) {
     var account = drupalgap_entity_build_from_form_state(form, form_state);
     user_register(account, {
       success: function(data) {
+        var config = form.user_register;
+        var options = {
+          title: t('Registered')
+        };
         // Check if e-mail verification is required or not..
         if (!drupalgap.site_settings.user_email_verification) {
           // E-mail verification not needed, if administrator approval is
           // needed, notify the user, otherwise log them in.
           if (drupalgap.site_settings.user_register == '2') {
             drupalgap_alert(
-            form.user_register.user_mail_register_pending_approval_required_body
+              config.user_mail_register_pending_approval_required_body,
+              options
             );
             drupalgap_goto('');
           }
           else {
             drupalgap_alert(
-              form.user_register.user_mail_register_no_approval_required_body
+              config.user_mail_register_no_approval_required_body,
+              options
             );
             // If we're automatically logging in do it, otherwise just go to
             // the front page.
@@ -11588,7 +11738,8 @@ function user_register_form_submit(form, form_state) {
         else {
           // E-mail verification needed... notify the user.
           drupalgap_alert(
-            form.user_register.user_mail_register_email_verification_body
+            config.user_mail_register_email_verification_body,
+            options
           );
           drupalgap_goto('');
         }
@@ -11623,37 +11774,48 @@ function user_profile_form(form, form_state, account) {
     // Add the fields for accounts to the form.
     drupalgap_field_info_instances_add_to_form('user', null, form, account);
 
+    // If the user can't change their user name, remove access to it.
+    if (!user_access('change own username')) {
+      form.elements['name'].access = false;
+      form.elements['name'].required = false;
+    }
+
+    // If profile pictures are disabled, remove the core field from the form.
+    if (drupalgap.site_settings.user_pictures == 0) {
+      delete form.elements.picture;
+    }
+
     // Add password fields to the form. We show the current password field only
     // if the user is editing their account. We show the password and confirm
     // password field no matter what.
     if (Drupal.user.uid == account.uid) {
       form.elements.current_pass = {
-        'title': _('Current password'),
+        'title': t('Current password'),
         'type': 'password',
-        'description': _('Enter your current password to change the E-mail ') +
-          _('address or Password.')
+        'description': t('Enter your current password to change the E-mail ' +
+          'address or Password.')
       };
     }
     form.elements.pass_pass1 = {
-      'title': _('Password'),
+      'title': t('Password'),
       'type': 'password'
     };
     form.elements.pass_pass2 = {
-      'title': _('Confirm password'),
+      'title': t('Confirm password'),
       'type': 'password',
-      'description': _('To change the current user password, enter the new ') +
-        _('password in both fields.')
+      'description': t('To change the current user password, enter the new ' +
+        'password in both fields.')
     };
 
     // Add submit to form.
     form.elements.submit = {
       'type': 'submit',
-      'value': 'Save'
+      'value': t('Save')
     };
 
     // Add cancel button to form.
     form.buttons['cancel'] = {
-      'title': _('Cancel'),
+      'title': t('Cancel'),
       attributes: {
         onclick: 'javascript:drupalgap_back();'
       }
@@ -11665,6 +11827,40 @@ function user_profile_form(form, form_state, account) {
 }
 
 /**
+ * The user profile form validate handler.
+ * @param {Object} form
+ * @param {Object} form_state
+ */
+function user_profile_form_validate(form, form_state) {
+  try {
+    // If they entered their current password, and entered new passwords, make
+    // sure the new passwords match.
+    if (!empty(form_state.values['current_pass'])) {
+      if (
+        !empty(form_state.values['pass_pass1']) &&
+        !empty(form_state.values['pass_pass2']) &&
+        form_state.values['pass_pass1'] != form_state.values['pass_pass2']
+      ) {
+        drupalgap_form_set_error('pass_pass1', t('Passwords do not match.'));
+      }
+    }
+    // If they didn't enter their current password and entered new passwords,
+    // tell them they need to enter their current password.
+    else if (
+      empty(form_state.values['current_pass']) &&
+      !empty(form_state.values['pass_pass1']) &&
+      !empty(form_state.values['pass_pass2'])
+    ) {
+      drupalgap_form_set_error(
+        'current_pass',
+        t('You must enter your current password to change your password.')
+      );
+    }
+  }
+  catch (error) { console.log('user_profile_form_validate - ' + error); }
+}
+
+/**
  * The user profile form submit handler.
  * @param {Object} form
  * @param {Object} form_state
@@ -11672,6 +11868,17 @@ function user_profile_form(form, form_state, account) {
 function user_profile_form_submit(form, form_state) {
   try {
     var account = drupalgap_entity_build_from_form_state(form, form_state);
+    // If they provided their current password, and their new password, prepare
+    // the account submission values.
+    if (
+      account.current_pass &&
+      !empty(account.pass_pass1) &&
+      !empty(account.pass_pass2)
+    ) {
+      account.pass = account.pass_pass1;
+      delete account.pass_pass1;
+      delete account.pass_pass2;
+    }
     drupalgap_entity_form_submit(form, form_state, account);
   }
   catch (error) { console.log('user_profile_form_submit - ' + error); }
@@ -11681,12 +11888,13 @@ function user_profile_form_submit(form, form_state) {
  * The request new password form.
  * @param {Object} form
  * @param {Object} form_state
+ * @return {Object}
  */
 function user_pass_form(form, form_state) {
   try {
     form.elements['name'] = {
       type: 'textfield',
-      title: _('Username or e-mail address'),
+      title: t('Username or e-mail address'),
       required: true,
       attributes: {
         onkeypress: "drupalgap_form_onkeypress('" + form.id + "')"
@@ -11694,7 +11902,7 @@ function user_pass_form(form, form_state) {
     };
     form.elements['submit'] = {
       type: 'submit',
-      value: 'E-mail new password'
+      value: t('E-mail new password')
     };
     return form;
   }
@@ -11712,11 +11920,11 @@ function user_pass_form_submit(form, form_state) {
         success: function(result) {
           if (result[0]) {
             var msg =
-              _('Further instructions have been sent to your e-mail address.');
+              t('Further instructions have been sent to your e-mail address.');
             drupalgap_set_message(msg);
           }
           else {
-            var msg = _('There was a problem sending an e-mail to your address.');
+            var msg = t('There was a problem sending an e-mail to your address.');
             drupalgap_set_message(msg, 'warning');
           }
           drupalgap_goto('user/login');
@@ -11725,6 +11933,7 @@ function user_pass_form_submit(form, form_state) {
   }
   catch (error) { console.log('user_pass_form_submit - ' + error); }
 }
+
 // Used to hold onto the terms once they've been loaded into a widget, keyed by
 // the form element's id, this allows (views exposed filters particularly) forms
 // to easily retrieve the terms after they've been fetch from the server.
@@ -11982,23 +12191,23 @@ function taxonomy_assemble_form_state_into_field(entity_type, bundle,
 function taxonomy_menu() {
     var items = {
       'taxonomy/vocabularies': {
-        'title': 'Taxonomy',
+        'title': t('Taxonomy'),
         'page_callback': 'taxonomy_vocabularies_page',
         'pageshow': 'taxonomy_vocabularies_pageshow'
       },
       'taxonomy/vocabulary/%': {
-        'title': 'Taxonomy vocabulary',
+        'title': t('Taxonomy vocabulary'),
         'page_callback': 'taxonomy_vocabulary_page',
         'page_arguments': [2],
         'pageshow': 'taxonomy_vocabulary_pageshow'
       },
       'taxonomy/vocabulary/%/view': {
-        'title': 'View',
+        'title': t('View'),
         'type': 'MENU_DEFAULT_LOCAL_TASK',
         'weight': -10
       },
       'taxonomy/vocabulary/%/edit': {
-        'title': 'Edit',
+        'title': t('Edit'),
         'page_callback': 'entity_page_edit',
         'pageshow': 'entity_page_edit_pageshow',
         'page_arguments': [
@@ -12012,18 +12221,18 @@ function taxonomy_menu() {
         options: {reloadPage: true}
       },
       'taxonomy/term/%': {
-        'title': 'Taxonomy term',
+        'title': t('Taxonomy term'),
         'page_callback': 'taxonomy_term_page',
         'page_arguments': [2],
         'pageshow': 'taxonomy_term_pageshow'
       },
       'taxonomy/term/%/view': {
-        'title': 'View',
+        'title': t('View'),
         'type': 'MENU_DEFAULT_LOCAL_TASK',
         'weight': -10
       },
       'taxonomy/term/%/edit': {
-        'title': 'Edit',
+        'title': t('Edit'),
         'page_callback': 'entity_page_edit',
         'pageshow': 'entity_page_edit_pageshow',
         'page_arguments': ['taxonomy_form_term', 'taxonomy_term', 2],
@@ -12062,7 +12271,7 @@ function taxonomy_form_vocabulary(form, form_state, vocabulary) {
     // Add submit to form.
     form.elements.submit = {
       'type': 'submit',
-      'value': 'Save'
+      'value': t('Save')
     };
 
     // Add cancel button to form.
@@ -12115,7 +12324,7 @@ function taxonomy_form_term(form, form_state, term) {
     // Add submit to form.
     form.elements.submit = {
       'type': 'submit',
-      'value': 'Save'
+      'value': t('Save')
     };
 
     // Add cancel button to form.
@@ -12246,7 +12455,7 @@ function taxonomy_vocabularies_page() {
     var content = {
       'vocabulary_listing': {
         'theme': 'jqm_item_list',
-        'title': 'Vocabularies',
+        'title': t('Vocabularies'),
         'items': [],
         'attributes': {'id': 'vocabulary_listing_items'}
       }
@@ -12291,7 +12500,7 @@ function taxonomy_vocabulary_page(vid) {
         ),
         taxonomy_term_listing: {
           theme: 'jqm_item_list',
-          title: 'Terms',
+          title: t('Terms'),
           items: [],
           attributes: {
             id: 'taxonomy_term_listing_items_' + vid
@@ -12542,12 +12751,12 @@ function _theme_taxonomy_term_reference_load_items(options) {
           if (!options.required) {
             var option = null;
             if (options.exposed) {
-              option = '<option value="All">- Any -</option>';
+              option = '<option value="All">- '+t('Any')+' -</option>';
               _taxonomy_term_reference_terms[options.element_id]['All'] =
                 '- Any -';
             }
             else {
-              option = '<option value="">- None -</option>';
+              option = '<option value="">- '+t('None')+' -</option>';
               _taxonomy_term_reference_terms[options.element_id][''] =
                 '- None -';
             }
@@ -13405,90 +13614,3 @@ drupalgap.views_datasource = {
     catch (error) { console.log('drupalgap.views_datasource - ' + error); }
   }
 };
-
-(function() {
-
-	var translate = function(text)
-	{
-		var xlate = translateLookup(text);
-		
-		if (typeof xlate == "function")
-		{
-			xlate = xlate.apply(this, arguments);
-		}
-		else if (arguments.length > 1)
-		{
-			var aps = Array.prototype.slice;
-			var args = aps.call( arguments, 1 );
-  
-			xlate = formatter(xlate, args);
-		}
-		
-		return xlate;
-	};
-	
-	// I want it available explicity as well as via the object
-	translate.translate = translate;
-	
-	//from https://gist.github.com/776196 via http://davedash.com/2010/11/19/pythonic-string-formatting-in-javascript/ 
-	var defaultFormatter = (function() {
-		var re = /\{([^}]+)\}/g;
-		return function(s, args) {
-			return s.replace(re, function(_, match){ return args[match]; });
-		}
-	}());
-	var formatter = defaultFormatter;
-	translate.setFormatter = function(newFormatter)
-	{
-		formatter = newFormatter;
-	};
-	
-	translate.format = function()
-	{
-		var aps = Array.prototype.slice;
-		var s = arguments[0];
-		var args = aps.call( arguments, 1 );
-  
-		return formatter(s, args);
-	};
-
-	var dynoTrans = null;
-	translate.setDynamicTranslator = function(newDynoTrans)
-	{
-		dynoTrans = newDynoTrans;
-	};
-
-	var translation = null;
-	translate.setTranslation = function(newTranslation)
-	{
-		translation = newTranslation;
-	};
-	
-	function translateLookup(target)
-	{
-		if (translation == null || target == null)
-		{
-			return target;
-		}
-		
-		if (target in translation == false)
-		{
-			if (dynoTrans != null)
-			{
-				return dynoTrans(target);
-			}
-			return target;
-		}
-		
-		var result = translation[target];
-		if (result == null)
-		{
-			return target;
-		}
-		
-		return result;
-	};
-	
-	window._ = translate;
-
-})();

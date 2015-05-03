@@ -52,7 +52,7 @@ function drupalgap_entity_assemble_data(entity_type, bundle, entity, options) {
  */
 function drupalgap_entity_edit_form_delete_button(entity_type, entity_id) {
     return {
-      title: 'Delete',
+      title: t('Delete'),
       attributes: {
         onclick: "javascript:drupalgap_entity_edit_form_delete_confirmation('" +
           entity_type + "', " + entity_id +
@@ -74,37 +74,43 @@ function drupalgap_entity_edit_form_delete_confirmation(entity_type,
   entity_id) {
   try {
     var confirm_msg =
-      'Delete this content, are you sure? This action cannot be undone...';
-    if (confirm(confirm_msg)) {
-      // Change the jQM loader mode to saving.
-      drupalgap.loader = 'deleting';
-      // Set up the api call arguments and success callback.
-      var call_arguments = {};
-      call_arguments.success = function(result) {
-        // Remove the entities page from the DOM, if it exists.
-        var entity_page_path = entity_type + '/' + entity_id;
-        var entity_page_id = drupalgap_get_page_id(entity_page_path);
-        if (drupalgap_page_in_dom(entity_page_id)) {
-          drupalgap_remove_page_from_dom(entity_page_id);
+      t('Delete this content, are you sure? This action cannot be undone...');
+    drupalgap_confirm(confirm_msg, {
+        confirmCallback: function(button) {
+          if (button == 2) { return; }
+          // Change the jQM loader mode to deleting.
+          drupalgap.loader = 'deleting';
+          // Set up the api call arguments and success callback.
+          var call_arguments = {};
+          call_arguments.success = function(result) {
+            // Remove the entities page from the DOM, if it exists.
+            var entity_page_path = entity_type + '/' + entity_id;
+            var entity_page_id = drupalgap_get_page_id(entity_page_path);
+            if (drupalgap_page_in_dom(entity_page_id)) {
+              drupalgap_remove_page_from_dom(entity_page_id);
+            }
+            // Remove the entity from local storage.
+            // @todo - this should be moved to jDrupal.
+            window.localStorage.removeItem(
+              entity_local_storage_key(entity_type, entity_id)
+            );
+            // Go to the front page, unless a form action path was specified.
+            var form = drupalgap_form_local_storage_load('node_edit');
+            var destination = form.action ? form.action : '';
+            drupalgap_goto(destination, {
+              reloadPage: true,
+              form_submission: true
+            });
+          };
+          // Call the delete function.
+          var name = services_get_resource_function_for_entity(
+            entity_type,
+            'delete'
+          );
+          var fn = window[name];
+          fn(entity_id, call_arguments);
         }
-        // Remove the entity from local storage.
-        // @todo - this should be moved to jDrupal.
-        window.localStorage.removeItem(
-          entity_local_storage_key(entity_type, entity_id)
-        );
-        // Go to the front page, unless a form action path was specified.
-        var form = drupalgap_form_local_storage_load('node_edit');
-        var destination = form.action ? form.action : '';
-        drupalgap_goto('', { destination: true, form_submission: true });
-      };
-      // Call the delete function.
-      var name = services_get_resource_function_for_entity(
-        entity_type,
-        'delete'
-      );
-      var fn = window[name];
-      fn(entity_id, call_arguments);
-    }
+    });
   }
   catch (error) {
     console.log('drupalgap_entity_edit_form_delete_confirmation - ' + error);
@@ -545,8 +551,16 @@ function drupalgap_entity_form_submit(form, form_state, entity) {
           }
           destination = prefix + '/' + result[primary_key];
         }
+        // Is there a destination URL query parameter overwriting the action?
         if (_GET('destination')) { destination = _GET('destination'); }
-        drupalgap_goto(destination, { form_submission: true });
+        // Set up the default goto options, and use any options provided by the
+        // form.
+        var goto_options = { form_submission: true };
+        if (form.action_options) {
+          goto_options = $.extend({}, goto_options, form.action_options);
+        }
+        // Finally goto our destination.
+        drupalgap_goto(destination, goto_options);
       }
       catch (error) {
         console.log('drupalgap_entity_form_submit - success - ' + error);
@@ -669,7 +683,7 @@ function drupalgap_entity_get_core_fields(entity_type, bundle) {
         };
         fields.title = {
           'type': 'textfield',
-          'title': 'Title',
+          'title': t('Title'),
           'required': true,
           'default_value': '',
           'description': ''
@@ -693,14 +707,14 @@ function drupalgap_entity_get_core_fields(entity_type, bundle) {
         };
         fields.name = {
           'type': 'textfield',
-          'title': 'Username',
+          'title': t('Username'),
           'required': true,
           'default_value': '',
           'description': ''
         };
         fields.mail = {
           'type': 'email',
-          'title': 'E-mail address',
+          'title': t('E-mail address'),
           'required': true,
           'default_value': '',
           'description': ''
@@ -708,7 +722,7 @@ function drupalgap_entity_get_core_fields(entity_type, bundle) {
         fields.picture = {
           'type': 'image',
           'widget_type': 'imagefield_widget',
-          'title': 'Picture',
+          'title': t('Picture'),
           'required': false,
           'value': 'Add Picture'
         };
@@ -727,13 +741,13 @@ function drupalgap_entity_get_core_fields(entity_type, bundle) {
           },
           'name': {
             'type': 'textfield',
-            'title': 'Name',
+            'title': t('Name'),
             'required': true,
             'default_value': ''
           },
           'description': {
             'type': 'textarea',
-            'title': 'Description',
+            'title': t('Description'),
             'required': false,
             'default_value': ''
           }
@@ -748,19 +762,19 @@ function drupalgap_entity_get_core_fields(entity_type, bundle) {
           },
           'name': {
             'type': 'textfield',
-            'title': 'Name',
+            'title': t('Name'),
             'required': true,
             'default_value': ''
           },
           'machine_name': {
             'type': 'textfield',
-            'title': 'Machine Name',
+            'title': t('Machine Name'),
             'required': true,
             'default_value': ''
           },
           'description': {
             'type': 'textarea',
-            'title': 'Description',
+            'title': t('Description'),
             'required': false,
             'default_value': ''
           }

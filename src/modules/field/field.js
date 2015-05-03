@@ -160,6 +160,16 @@ function drupalgap_field_info_instances_add_to_form(entity_type, bundle,
               }
             }
           }
+
+          // Give module's a chance to alter their own element during the form
+          // build, that way element properties will be saved to local storage
+          // and then available during hook_field_widget_form() and the form
+          // submission process.
+          var fn = field.widget.module + '_field_info_instance_add_to_form';
+          if (drupalgap_function_exists(fn)) {
+            window[fn](entity_type, bundle, form, entity, form.elements[name]);
+          }
+
         }
       });
     }
@@ -282,6 +292,15 @@ function list_assemble_form_state_into_field(entity_type, bundle,
           );
         }
         break;
+      case 'list_text':
+        // For radio buttons on the user entity form, field values must be
+        // "flattened", i.e. this field_foo: { und: [ { value: 123 }]}, should be
+        // turned into field_foo: { und: 123 }
+        if (entity_type == 'user' && instance.widget.type == 'options_buttons') {
+          field_key.use_delta = false;
+          field_key.use_wrapper = false;
+        }
+        break;
       default:
         console.log(
           'WARNING: list_assemble_form_state_into_field - unknown type (' +
@@ -317,7 +336,7 @@ function list_views_exposed_filter(form, form_state, element, filter, field) {
       // the default value accordingly.
       element.options = filter.value_options;
       if (!element.required) {
-        element.options['All'] = '- Any -';
+        element.options['All'] = '- '+t('Any')+' -';
         if (typeof element.value === 'undefined') { element.value = 'All'; }
       }
     }
@@ -481,7 +500,7 @@ function options_field_widget_form(form, form_state, field, instance, langcode,
               // it as the default.  If it is optional, place a "none" option
               // for the user to choose from.
               var text = '- None -';
-              if (items[delta].required) { text = '- Select a value -'; }
+              if (items[delta].required) { text = '- '+t('Select a value')+' -'; }
               items[delta].options[''] = text;
               if (empty(items[delta].value)) { items[delta].value = ''; }
               // If more than one value is allowed, turn it into a multiple
@@ -552,8 +571,8 @@ function options_field_widget_form(form, form_state, field, instance, langcode,
           // If the select list is required, add a 'Select' option and set
           // it as the default.  If it is optional, place a "none" option
           // for the user to choose from.
-          var text = '- None -';
-          if (items[delta].required) { text = '- Select a value -'; }
+          var text = '- '+t('None')+' -';
+          if (items[delta].required) { text = '- '+t('Select a value')+' -'; }
           items[delta].children.push({
               type: widget_type,
               attributes: {
