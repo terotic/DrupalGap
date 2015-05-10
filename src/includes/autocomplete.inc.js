@@ -104,6 +104,20 @@ function theme_autocomplete(variables) {
       '\';' +
     '</script>';
 
+    // If there was a default value, set it's key title in the autocomplete's
+    // text field.
+    if (variables.default_value_label) {
+      js += drupalgap_jqm_page_event_script_code({
+          page_id: drupalgap_get_page_id(),
+          jqm_page_event: 'pageshow',
+          jqm_page_event_callback: '_theme_autocomplete_set_default_value_label',
+          jqm_page_event_args: JSON.stringify({
+              selector: selector,
+              default_value_label: variables.default_value_label
+          })
+      }, id);
+    }
+
     // Theme the list and add the js to it, then return the html.
     html += theme('item_list', widget);
     html += js;
@@ -229,6 +243,9 @@ function _theme_autocomplete(list, e, data, autocomplete_id) {
       var handler = null;
       if (autocomplete.custom) {
         if (autocomplete.handler) { handler = autocomplete.handler; }
+        else if (autocomplete.field_info_field.settings.handler) {
+          handler = autocomplete.field_info_field.settings.handler;
+        }
         else { handler = 'views'; }
       }
       else {
@@ -267,8 +284,8 @@ function _theme_autocomplete(list, e, data, autocomplete_id) {
           });
           break;
 
-        // Simple entity selection mode, use the Index resource for the entity
-        // type.
+        // Simple entity selection mode (provided by the entity reference
+        // module), use the Index resource for the entity type.
         case 'base':
           var field_settings =
             autocomplete.field_info_field.settings;
@@ -280,14 +297,12 @@ function _theme_autocomplete(list, e, data, autocomplete_id) {
             return;
           }
           var options = {
-            fields: ['nid', 'title'],
-            parameters: {
-              title: '%' + value + '%'
-            },
-            parameters_op: {
-              title: 'like'
-            }
+            fields: [autocomplete.value, autocomplete.filter],
+            parameters: { },
+            parameters_op: { }
           };
+          options.parameters[autocomplete.filter] = '%' + value + '%';
+          options.parameters_op[autocomplete.filter] = 'like';
           $.each(
             field_settings.handler_settings.target_bundles,
             function(bundle, name) {
@@ -322,17 +337,14 @@ function _theme_autocomplete(list, e, data, autocomplete_id) {
               parameters: { },
               parameters_op: { }
             };
-            var fields = [];
-            switch (autocomplete.entity_type) {
-              case 'node':
-                fields = ['nid', 'title'];
-                break;
-              case 'taxonomy_term':
-                fields = ['tid', 'name'];
-                if (autocomplete.vid) {
-                  query.parameters['vid'] = autocomplete.vid;
-                }
-                break;
+            var fields = [
+              entity_primary_key(autocomplete.entity_type),
+              entity_primary_key_title(autocomplete.entity_type)
+            ];
+            if (autocomplete.entity_type == 'taxonomy_term') {
+              if (autocomplete.vid) {
+                query.parameters['vid'] = autocomplete.vid;
+              }
             }
             query.fields = fields;
             query.parameters[autocomplete.filter] = '%' + value + '%';
@@ -439,5 +451,18 @@ function _theme_autocomplete_click(id, item, autocomplete_id) {
     }
   }
   catch (error) { console.log('_theme_autocomplete_click - ' + error); }
+}
+
+/**
+ * Used to set a default value in an autocomplete's text field.
+ * @param {Object} options
+ */
+function _theme_autocomplete_set_default_value_label(options) {
+  try {
+    setTimeout(function() {
+        $(options.selector).val(options.default_value_label).trigger('create');
+    }, 250);
+  }
+  catch (error) { console.log('_theme_autocomplete_set_default_value_label - ' + error); }
 }
 

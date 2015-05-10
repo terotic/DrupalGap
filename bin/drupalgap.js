@@ -57,6 +57,7 @@ function drupalgap_init() {
       form_states: [],
       loading: false, /* indicates if the loading message is shown or not */
       loader: 'loading', /* used to determine the jQM loader mode */
+      locale: {}, /* holds onto language json objects, keyed by language code */
       messages: [],
       menus: {},
       menu_links: {},
@@ -263,6 +264,7 @@ function drupalgap_bootstrap() {
     drupalgap_load_modules();
     drupalgap_load_theme();
     drupalgap_load_blocks();
+    drupalgap_load_locales();
     menu_router_build();
     drupalgap_menus_load();
     drupalgap_theme_registry_build();
@@ -594,6 +596,58 @@ function drupalgap_load_blocks() {
     drupalgap.blocks = module_invoke_all('block_info');
   }
   catch (error) { console.log('drupalgap_load_blocks - ' + error); }
+}
+
+/**
+ * Loads language files.
+ */
+function drupalgap_load_locales() {
+  try {
+
+    // Load any drupalgap.settings.locale specified language files.
+    if (typeof drupalgap.settings.locale === 'undefined') { return; }
+    for (var language_code in drupalgap.settings.locale) {
+      if (!drupalgap.settings.locale.hasOwnProperty(language_code)) { continue; }
+      var language = drupalgap.settings.locale[language_code];
+      var file_path = 'locale/' + language_code + '.json';
+      if (!drupalgap_file_exists(file_path)) { continue; }
+      drupalgap.locale[language_code] = drupalgap_file_get_contents(
+        file_path,
+        { dataType: 'json' }
+      );
+    }
+
+    // Load any language files specified by modules, and merge them into the
+    // global language file (or create a new one if it doesn't exist).
+    var modules = module_implements('locale');
+    for (var i = 0; i < modules.length; i++) {
+      var module = modules[i];
+      var fn = window[module + '_locale'];
+      var languages = fn();
+      for (var j = 0; j < languages.length; j++) {
+        var language_code = languages[i];
+        var file_path =
+          drupalgap_get_path('module', module) +
+          '/locale/' + language_code + '.json';
+        var translations = drupalgap_file_get_contents(
+          file_path,
+          { dataType: 'json' }
+        );
+        if (typeof drupalgap.locale[language_code] === 'undefined') {
+          drupalgap.locale[language_code] = translations;
+        }
+        else {
+          $.extend(
+            drupalgap.locale[language_code],
+            drupalgap.locale[language_code],
+            translations
+          );
+        }
+      }
+    }
+
+  }
+  catch (error) { console.log('drupalgap_load_locales - ' + error); }
 }
 
 /**
@@ -1083,19 +1137,20 @@ function drupalgap_loading_message_hide() {
 function drupalgap_loader_options() {
   try {
     var mode = drupalgap.loader;
-    var text = t('Loading')+'...';
+    var text = t('Loading') + '...';
     var textVisible = true;
-    if (mode == 'saving') { var text = t('Saving')+'...'; }
+    if (mode == 'saving') { var text = t('Saving') + '...'; }
     var options = {
       text: text,
       textVisible: textVisible
     };
     if (drupalgap.settings.loader && drupalgap.settings.loader[mode]) {
-      options = drupalgap.settings.loader[mode];
+      options = $.extend(true, options, drupalgap.settings.loader[mode]);
+      if (options.text) { options.text = t(options.text); }
     }
     return options;
   }
-  catch (error) { console.log(' - ' + error); }
+  catch (error) { console.log('drupalgap_loader_options - ' + error); }
 }
 
 /**
@@ -1754,6 +1809,20 @@ function theme_autocomplete(variables) {
       '\';' +
     '</script>';
 
+    // If there was a default value, set it's key title in the autocomplete's
+    // text field.
+    if (variables.default_value_label) {
+      js += drupalgap_jqm_page_event_script_code({
+          page_id: drupalgap_get_page_id(),
+          jqm_page_event: 'pageshow',
+          jqm_page_event_callback: '_theme_autocomplete_set_default_value_label',
+          jqm_page_event_args: JSON.stringify({
+              selector: selector,
+              default_value_label: variables.default_value_label
+          })
+      }, id);
+    }
+
     // Theme the list and add the js to it, then return the html.
     html += theme('item_list', widget);
     html += js;
@@ -1879,6 +1948,9 @@ function _theme_autocomplete(list, e, data, autocomplete_id) {
       var handler = null;
       if (autocomplete.custom) {
         if (autocomplete.handler) { handler = autocomplete.handler; }
+        else if (autocomplete.field_info_field.settings.handler) {
+          handler = autocomplete.field_info_field.settings.handler;
+        }
         else { handler = 'views'; }
       }
       else {
@@ -1917,8 +1989,8 @@ function _theme_autocomplete(list, e, data, autocomplete_id) {
           });
           break;
 
-        // Simple entity selection mode, use the Index resource for the entity
-        // type.
+        // Simple entity selection mode (provided by the entity reference
+        // module), use the Index resource for the entity type.
         case 'base':
           var field_settings =
             autocomplete.field_info_field.settings;
@@ -1930,14 +2002,12 @@ function _theme_autocomplete(list, e, data, autocomplete_id) {
             return;
           }
           var options = {
-            fields: ['nid', 'title'],
-            parameters: {
-              title: '%' + value + '%'
-            },
-            parameters_op: {
-              title: 'like'
-            }
+            fields: [autocomplete.value, autocomplete.filter],
+            parameters: { },
+            parameters_op: { }
           };
+          options.parameters[autocomplete.filter] = '%' + value + '%';
+          options.parameters_op[autocomplete.filter] = 'like';
           $.each(
             field_settings.handler_settings.target_bundles,
             function(bundle, name) {
@@ -1972,17 +2042,14 @@ function _theme_autocomplete(list, e, data, autocomplete_id) {
               parameters: { },
               parameters_op: { }
             };
-            var fields = [];
-            switch (autocomplete.entity_type) {
-              case 'node':
-                fields = ['nid', 'title'];
-                break;
-              case 'taxonomy_term':
-                fields = ['tid', 'name'];
-                if (autocomplete.vid) {
-                  query.parameters['vid'] = autocomplete.vid;
-                }
-                break;
+            var fields = [
+              entity_primary_key(autocomplete.entity_type),
+              entity_primary_key_title(autocomplete.entity_type)
+            ];
+            if (autocomplete.entity_type == 'taxonomy_term') {
+              if (autocomplete.vid) {
+                query.parameters['vid'] = autocomplete.vid;
+              }
             }
             query.fields = fields;
             query.parameters[autocomplete.filter] = '%' + value + '%';
@@ -2089,6 +2156,19 @@ function _theme_autocomplete_click(id, item, autocomplete_id) {
     }
   }
   catch (error) { console.log('_theme_autocomplete_click - ' + error); }
+}
+
+/**
+ * Used to set a default value in an autocomplete's text field.
+ * @param {Object} options
+ */
+function _theme_autocomplete_set_default_value_label(options) {
+  try {
+    setTimeout(function() {
+        $(options.selector).val(options.default_value_label).trigger('create');
+    }, 250);
+  }
+  catch (error) { console.log('_theme_autocomplete_set_default_value_label - ' + error); }
 }
 
 /**
@@ -2546,11 +2626,19 @@ function bl() {
 
 /**
  * Returns translated text.
+ * @param {String} str The string to translate
  * @return {String}
  */
 function t(str) {
+  var lang = arguments[3] ? arguments[3] : Drupal.settings.language_default;
+  if (
+    lang != 'und' &&
+    typeof drupalgap.locale[lang] !== 'undefined' &&
+    drupalgap.locale[lang][str]
+  ) {  return drupalgap.locale[lang][str]; }
   return str;
 }
+
 /**
  * Given a form element, this will return true if access to the element is
  * permitted, false otherwise.
@@ -2946,7 +3034,7 @@ function _drupalgap_form_render_element(form, element) {
 
     // Add element description.
     if (element.description && element.type != 'hidden') {
-      html += '<div>' + element.description + '</div>';
+      html += '<div>' + t(element.description) + '</div>';
     }
 
     // Close the element container.
@@ -9520,7 +9608,7 @@ function menu_block_view_pageshow(options) {
               link.options.attributes['class'] +=
                 ' ui-btn ui-btn-active ui-state-persist ';
             }
-            items.push(l(link.title, link.path, link.options));
+            items.push(l(t(link.title), link.path, link.options));
         });
         if (items.length > 0) {
           // Pass along any menu attributes.
