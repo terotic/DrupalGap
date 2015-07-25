@@ -21,18 +21,34 @@ function image_field_formatter_view(entity_type, entity, field, instance,
   langcode, items, display) {
   try {
     var element = {};
+    // Toss on the default image if we one is specified and we have no items.
+    // "In addition, any code which programmatically generates a link to an
+    // image derivative without using the standard image_style_url() API
+    // function will no longer work correctly if the image does not already
+    // exist in the file system, since the necessary token will not be present
+    // in the URL." @see http://drupal.stackexchange.com/a/76827/10645
+    if (empty(items) && instance.settings.default_image) {
+      items = [{
+          uri: instance.settings.default_image_uri
+      }];
+    }
     if (!empty(items)) {
       for (var delta in items) {
           if (!items.hasOwnProperty(delta)) { continue; }
           var item = items[delta];
-          // @TODO - add support for image_style
-          element[delta] = {
-            theme: 'image',
+          var theme = empty(display.settings.image_style) ?
+            'image' : 'image_style';
+          var image = {
+            theme: theme,
             alt: item.alt,
-            title: item.title,
-            path: drupalgap_image_path(item.uri)
-            /*image_style:display.settings.image_style*/
+            title: item.title
           };
+          if (theme == 'image_style') {
+            image.style_name = display.settings.image_style;
+            image.path = item.uri;
+          }
+          else { image.path = drupalgap_image_path(item.uri); }
+          element[delta] = image;
       }
     }
     return element;
@@ -279,6 +295,8 @@ function image_form_alter(form, form_state, form_id) {
  */
 function image_style_url(style_name, path) {
   try {
+    // @TODO - bug: the trailing slash on public and private is breaking images
+    // that don't live in a sub directory in sites/default/files.
     var src =
       Drupal.settings.site_path + Drupal.settings.base_path + path;
     if (src.indexOf('public://') != -1) {

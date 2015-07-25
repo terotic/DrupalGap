@@ -160,9 +160,11 @@ function template_process_page(variables) {
     for (var index in drupalgap.theme.regions) {
         if (!drupalgap.theme.regions.hasOwnProperty(index)) { continue; }
         var region = drupalgap.theme.regions[index];
+        var _region = {};
+        $.extend(true, _region, region);
         page_html = page_html.replace(
           '{:' + region.name + ':}',
-          drupalgap_render_region(region)
+          drupalgap_render_region(_region)
         );
     }
     $('#' + page_id).html(page_html);
@@ -237,7 +239,8 @@ function drupalgap_remove_page_from_dom(page_id) {
     if (typeof arguments[1] !== 'undefined') { options = arguments[1]; }
     if (current_page_id != page_id || options.force) {
       $('#' + page_id).empty().remove();
-      delete drupalgap.pages[page_id];
+      var page_index = drupalgap.pages.indexOf(page_id);
+      if (page_index > -1) { drupalgap.pages.splice(page_index, 1); }
       // We'll remove the query string, unless we were instructed to leave it.
       if (
         typeof _dg_GET[page_id] !== 'undefined' &&
