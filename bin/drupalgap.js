@@ -4233,7 +4233,7 @@ function theme_radios(variables) {
       for (var value in variables.options) {
           if (!variables.options.hasOwnProperty(value)) { continue; }
           var label = variables.options[value];
-          if (value == 'attributes') { return; } // Skip the attributes.
+          if (value == 'attributes') { continue; } // Skip the attributes.
           var checked = '';
           if (variables.value && variables.value == value) {
             checked = ' checked="checked" ';
@@ -6331,6 +6331,13 @@ function theme_video(variables) {
     if (variables.path) { variables.attributes.src = variables.path; }
     if (variables.alt) { variables.attributes.alt = variables.alt; }
     if (variables.title) { variables.attributes.title = variables.title; }
+    // Add the 'webkit-playsinline' attribute on iOS devices if no one made a
+    // decision about it being there or not.
+    if (
+      typeof device !== 'undefined' &&
+      device.platform == 'iOS' &&
+      typeof variables.attributes['webkit-playsinline'] === 'undefined'
+    ) { variables.attributes['webkit-playsinline'] = ''; }
     // Render the video player.
     return '<video ' + drupalgap_attributes(variables.attributes) +
     '></video>';
@@ -7611,11 +7618,13 @@ function drupalgap_entity_render_content(entity_type, entity) {
       bundle
     );
     // Update this entity in local storage so the content property sticks.
-    _entity_local_storage_save(
-      entity_type,
-      entity[entity_primary_key(entity_type)],
-      entity
-    );
+    if (Drupal.settings.cache.entity.enabled) {
+      _entity_local_storage_save(
+        entity_type,
+        entity[entity_primary_key(entity_type)],
+        entity
+      );
+    }
   }
   catch (error) {
     console.log('drupalgap_entity_render_content - ' + error);
