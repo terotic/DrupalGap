@@ -247,6 +247,24 @@ function _drupalgap_form_render_element(form, element) {
     var item_html = '';
     var item_label = '';
     var render_item = null;
+    
+    // @terotic - If element is taxonomy term element
+    // combine all item values into csv string
+    // only continue with the last element as single object
+    if (element.type == 'taxonomy_term_reference') {
+        var taxonomy_term_values = '';
+        for (var delta in items) {
+            var taxonomy_item = items[delta];
+            if (taxonomy_item.item) {
+                taxonomy_term_values += taxonomy_item.item.tid + ',';
+            }
+        }
+        taxonomy_term_values = taxonomy_term_values.slice(0, - 1);
+        var last_element = items[delta];
+        last_element.value = taxonomy_term_values;
+        items = { "0":last_element };
+    }
+    
     for (var delta in items) {
         if (!items.hasOwnProperty(delta)) { continue; }
         var item = items[delta];

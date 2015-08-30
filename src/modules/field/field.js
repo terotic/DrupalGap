@@ -594,14 +594,23 @@ function options_field_widget_form(form, form_state, field, instance, langcode,
           if (items[delta].required) {
             text = '- ' + t('Select a value') + ' -';
           }
-          items[delta].children.push({
-              type: widget_type,
-              attributes: {
+        
+          // @terotic If multiple values are accepted, adjust the widget attributes
+          var field_attributes = {
                 id: widget_id,
                 onchange: "_theme_taxonomy_term_reference_onchange(this, '" +
                   items[delta].id +
                 "');"
-              },
+              };
+          if (field.cardinality != 1) { 
+            field_attributes["data-native-menu"] = 'false';
+            field_attributes["multiple"] = 'multiple';
+            text = '- ' + t('Select a value') + ' -';
+          }
+        
+          items[delta].children.push({
+              type: widget_type,
+              attributes: field_attributes,
               options: { '': text }
           });
           // Attach a pageshow handler to the current page that will load the

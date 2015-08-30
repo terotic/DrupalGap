@@ -2956,6 +2956,24 @@ function _drupalgap_form_render_element(form, element) {
     var item_html = '';
     var item_label = '';
     var render_item = null;
+    
+    // @terotic - If element is taxonomy term element
+    // combine all item values into csv string
+    // only continue with the last element as single object
+    if (element.type == 'taxonomy_term_reference') {
+        var taxonomy_term_values = '';
+        for (var delta in items) {
+            var taxonomy_item = items[delta];
+            if (taxonomy_item.item) {
+                taxonomy_term_values += taxonomy_item.item.tid + ',';
+            }
+        }
+        taxonomy_term_values = taxonomy_term_values.slice(0, - 1);
+        var last_element = items[delta];
+        last_element.value = taxonomy_term_values;
+        items = { "0":last_element };
+    }
+    
     for (var delta in items) {
         if (!items.hasOwnProperty(delta)) { continue; }
         var item = items[delta];
@@ -6976,7 +6994,7 @@ function comment_services_postprocess(options, result) {
                     $(container).append(
                       theme('comment', { comment: comment })
                     ).trigger('create');
-                    scrollToElement('#' + container_id + ' :last-child', 500);
+                    scrollToElemen_('#' + container_id + ' :last-child', 500);
                     var form_selector = '#' + drupalgap_get_page_id() +
                       ' #comment_edit';
                     drupalgap_form_clear(form_selector);
@@ -7006,7 +7024,7 @@ function theme_comments(variables) {
     var html = '<div ' + drupalgap_attributes(variables.attributes) + '>';
     // Show a comments title if there are any comments.
     if (variables.node.comment_count > 0) {
-      html += '<h2 class="comments-title">Comments</h2>';
+      html += t('<h2 class="comments-title">Comments</h2>');
     }
     // If the comments are already rendered, show them.
     if (variables.comments) { html += variables.comments; }
@@ -7043,7 +7061,7 @@ function theme_comment(variables) {
     }
     // Comment date.
     var created = new Date(comment.created * 1000);
-    created = created.toLocaleDateString() + ' at ' +
+    created = created.toLocaleDateString() + _(' at ') +
       created.toLocaleTimeString();
     // Append comment extra fields and content. The user info will be rendered
     // as a list item link.
@@ -9035,14 +9053,23 @@ function options_field_widget_form(form, form_state, field, instance, langcode,
           if (items[delta].required) {
             text = '- ' + t('Select a value') + ' -';
           }
-          items[delta].children.push({
-              type: widget_type,
-              attributes: {
+        
+          // @terotic If multiple values are accepted, adjust the widget attributes
+          var field_attributes = {
                 id: widget_id,
                 onchange: "_theme_taxonomy_term_reference_onchange(this, '" +
                   items[delta].id +
                 "');"
-              },
+              };
+          if (field.cardinality != 1) { 
+            field_attributes["data-native-menu"] = 'false';
+            field_attributes["multiple"] = 'multiple';
+            text = '- ' + t('Select a value') + ' -';
+          }
+        
+          items[delta].children.push({
+              type: widget_type,
+              attributes: field_attributes,
               options: { '': text }
           });
           // Attach a pageshow handler to the current page that will load the
@@ -11979,7 +12006,6 @@ function drupalgap_user_has_role(role) {
   }
   catch (error) { console.log('drupalgap_user_has_role - ' + error); }
 }
-
 /**
  * The user login form.
  * @param {Object} form
@@ -12380,7 +12406,6 @@ function user_pass_form_submit(form, form_state) {
   }
   catch (error) { console.log('user_pass_form_submit - ' + error); }
 }
-
 // Used to hold onto the terms once they've been loaded into a widget, keyed by
 // the form element's id, this allows (views exposed filters particularly) forms
 // to easily retrieve the terms after they've been fetch from the server.
@@ -12627,7 +12652,12 @@ function taxonomy_assemble_form_state_into_field(entity_type, bundle,
         result = form_state_value;
         break;
       case 'options_select':
-        result = form_state_value;
+        // @terotic assembles the csv string value into a simple array
+        field_key.use_key = false;
+        field_key.use_wrapper = false;
+        tid_array = form_state_value.split(',');
+        for(var i=0; i<tid_array.length; i++) { tid_array[i] = +tid_array[i]; } 
+        result = tid_array;
         break;
     }
     return result;
@@ -14172,3 +14202,4 @@ drupalgap.views_datasource = {
     catch (error) { console.log('drupalgap.views_datasource - ' + error); }
   }
 };
+

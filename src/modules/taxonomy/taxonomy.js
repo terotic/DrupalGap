@@ -244,7 +244,12 @@ function taxonomy_assemble_form_state_into_field(entity_type, bundle,
         result = form_state_value;
         break;
       case 'options_select':
-        result = form_state_value;
+        // @terotic assembles the csv string value into a simple array
+        field_key.use_key = false;
+        field_key.use_wrapper = false;
+        tid_array = form_state_value.split(',');
+        for(var i=0; i<tid_array.length; i++) { tid_array[i] = +tid_array[i]; } 
+        result = tid_array;
         break;
     }
     return result;
