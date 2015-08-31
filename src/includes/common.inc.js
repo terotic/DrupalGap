@@ -376,6 +376,7 @@ function bl() {
   catch (error) { console.log('bl - ' + error); }
 }
 
+
 /**
  * Returns translated text.
  * @param {String} str The string to translate
@@ -383,11 +384,15 @@ function bl() {
  */
 function t(str) {
   var lang = arguments[3] ? arguments[3] : Drupal.settings.language_default;
+  lang = Drupal.settings.language_ui ? Drupal.settings.language_ui : Drupal.settings.language_default;
+  //@terotic added new language_ui setgting that only affects the translation of ui elements, 
+  //not content creation and loading
   if (
     lang != 'und' &&
     typeof drupalgap.locale[lang] !== 'undefined' &&
     drupalgap.locale[lang][str]
-  ) { return drupalgap.locale[lang][str]; }
+  ) { 
+    return drupalgap.locale[lang][str]; }
   return str;
 }
 

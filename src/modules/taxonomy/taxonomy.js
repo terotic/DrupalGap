@@ -247,9 +247,12 @@ function taxonomy_assemble_form_state_into_field(entity_type, bundle,
         // @terotic assembles the csv string value into a simple array
         field_key.use_key = false;
         field_key.use_wrapper = false;
-        tid_array = form_state_value.split(',');
-        for(var i=0; i<tid_array.length; i++) { tid_array[i] = +tid_array[i]; } 
-        result = tid_array;
+        if (form_state_value) {
+          tid_array = form_state_value.split(',');
+          for(var i=0; i<tid_array.length; i++) { tid_array[i] = +tid_array[i]; } 
+          result = tid_array;
+        }
+        else { result = [] }
         break;
     }
     return result;
@@ -809,6 +812,8 @@ function theme_taxonomy_term_reference(variables) {
  * @param {Object} options
  */
 function _theme_taxonomy_term_reference_load_items(options) {
+  //console.log('TERO theme_load_items loading items in SELECT widget' 
+            // + JSON.stringify(options, null, 4));
   try {
     // Build the index query, then make the call to the server.
     var query = {
@@ -829,6 +834,7 @@ function _theme_taxonomy_term_reference_load_items(options) {
 
           // If it's not required, place an empty option on the widget and set
           // it aside.
+          /* @terotic do not add extra options
           if (!options.required) {
             var option = null;
             if (options.exposed) {
@@ -843,15 +849,27 @@ function _theme_taxonomy_term_reference_load_items(options) {
             }
             $(widget).append(option);
           }
-
+          */
+          // Set default values //tero
+          
+          //console.log ('+++++ are we getting default values: ' + options.default_values);
+          var defaultvalues = []; //tero
+          if (options.default_values != null) {
+            defaultvalues = options.default_values.split(',');
+          }
+          
           // Place each term in the widget as an option, and set the option
           // aside.
           for (var index in terms) {
               if (!terms.hasOwnProperty(index)) { continue; }
               var term = terms[index];
-              var option = '<option value="' + term.tid + '">' +
+              var selected = ''; //tero
+              //console.log('TERO is this default value '+$.inArray(index, defaultvalues));
+              if ($.inArray(term.tid, defaultvalues)>=0) { selected='selected="selected"' };//tero
+              
+              var option = '<option value="' + term.tid + '" ' + selected +'>' +
                 term.name +
-              '</option>';
+              '</option>';//tero
               $(widget).append(option);
               _taxonomy_term_reference_terms[options.element_id][term.tid] =
                 term.name;
@@ -859,6 +877,9 @@ function _theme_taxonomy_term_reference_load_items(options) {
 
           // Refresh the select list.
           $(widget).selectmenu('refresh', true);
+          var valuefield = options.widget_id.replace('-select','');
+          //console.log('-----'+valuefield);
+          _theme_taxonomy_term_reference_onchange(widget,valuefield) ;
         }
     });
   }

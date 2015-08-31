@@ -251,7 +251,7 @@ function comment_services_postprocess(options, result) {
                     $(container).append(
                       theme('comment', { comment: comment })
                     ).trigger('create');
-                    scrollToElemen_('#' + container_id + ' :last-child', 500);
+                    scrollToElement('#' + container_id + ' :last-child', 500);
                     var form_selector = '#' + drupalgap_get_page_id() +
                       ' #comment_edit';
                     drupalgap_form_clear(form_selector);
@@ -274,8 +274,7 @@ function theme_comments(variables) {
   try {
     // Set the container id and append default attributes.
     variables.attributes.id = comments_container_id(variables.node.nid);
-    variables.attributes['class'] +=
-      'comments comments-node-' + variables.node.type;
+    variables.attributes['class'] += 'comments comments-node-' + variables.node.type;
     variables.attributes['data-role'] = 'collapsible-set';
     // Open the container.
     var html = '<div ' + drupalgap_attributes(variables.attributes) + '>';
@@ -318,7 +317,7 @@ function theme_comment(variables) {
     }
     // Comment date.
     var created = new Date(comment.created * 1000);
-    created = created.toLocaleDateString() + _(' at ') +
+    created = created.toLocaleDateString() + t(' at ') +
       created.toLocaleTimeString();
     // Append comment extra fields and content. The user info will be rendered
     // as a list item link.

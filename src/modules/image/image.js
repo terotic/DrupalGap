@@ -90,10 +90,11 @@ function image_field_widget_form(form, form_state, field, instance, langcode,
       var path = drupalgap_image_path(items[delta].item.uri);
       // @TODO - show the filesize.
       // @TODO - show the remove button.
-      var html = theme('image', { path: path }) +
-        '<div class="filename">' +
-          l(items[delta].item.filename, path, { InAppBrowser: true }) +
-        '</div>';
+      //@terotic showing image link is a bit inappropriate
+      //var html = theme('image', { path: path }) +
+        //'<div class="filename">' +
+        //  l(items[delta].item.filename, path, { InAppBrowser: true }) +
+        //'</div>';
         /*theme('button_link', {
             text: 'Remove',
             path: null,

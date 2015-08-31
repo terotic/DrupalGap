@@ -625,7 +625,9 @@ function drupalgap_load_locales() {
       }
       var language = drupalgap.settings.locale[language_code];
       var file_path = 'locale/' + language_code + '.json';
-      if (!drupalgap_file_exists(file_path)) { continue; }
+      //@terotic had to remove this as I can not get lang json files
+      //to pass jquery ajax test. Have to just TRUST that the file is there
+      //if (!drupalgap_file_exists(file_path)) { continue; }
       drupalgap.locale[language_code] = drupalgap_file_get_contents(
         file_path,
         { dataType: 'json' }
@@ -2692,6 +2694,7 @@ function bl() {
   catch (error) { console.log('bl - ' + error); }
 }
 
+
 /**
  * Returns translated text.
  * @param {String} str The string to translate
@@ -2699,11 +2702,15 @@ function bl() {
  */
 function t(str) {
   var lang = arguments[3] ? arguments[3] : Drupal.settings.language_default;
+  lang = Drupal.settings.language_ui ? Drupal.settings.language_ui : Drupal.settings.language_default;
+  //@terotic added new language_ui setgting that only affects the translation of ui elements, 
+  //not content creation and loading
   if (
     lang != 'und' &&
     typeof drupalgap.locale[lang] !== 'undefined' &&
     drupalgap.locale[lang][str]
-  ) { return drupalgap.locale[lang][str]; }
+  ) { 
+    return drupalgap.locale[lang][str]; }
   return str;
 }
 
@@ -6994,7 +7001,7 @@ function comment_services_postprocess(options, result) {
                     $(container).append(
                       theme('comment', { comment: comment })
                     ).trigger('create');
-                    scrollToElemen_('#' + container_id + ' :last-child', 500);
+                    scrollToElement('#' + container_id + ' :last-child', 500);
                     var form_selector = '#' + drupalgap_get_page_id() +
                       ' #comment_edit';
                     drupalgap_form_clear(form_selector);
@@ -7017,8 +7024,7 @@ function theme_comments(variables) {
   try {
     // Set the container id and append default attributes.
     variables.attributes.id = comments_container_id(variables.node.nid);
-    variables.attributes['class'] +=
-      'comments comments-node-' + variables.node.type;
+    variables.attributes['class'] += 'comments comments-node-' + variables.node.type;
     variables.attributes['data-role'] = 'collapsible-set';
     // Open the container.
     var html = '<div ' + drupalgap_attributes(variables.attributes) + '>';
@@ -7061,7 +7067,7 @@ function theme_comment(variables) {
     }
     // Comment date.
     var created = new Date(comment.created * 1000);
-    created = created.toLocaleDateString() + _(' at ') +
+    created = created.toLocaleDateString() + t(' at ') +
       created.toLocaleTimeString();
     // Append comment extra fields and content. The user info will be rendered
     // as a list item link.
@@ -9074,6 +9080,7 @@ function options_field_widget_form(form, form_state, field, instance, langcode,
           });
           // Attach a pageshow handler to the current page that will load the
           // terms into the widget.
+          // @terotic added default_values passed to the widget too
           var options = {
             'page_id': drupalgap_get_page_id(drupalgap_path_get()),
             'jqm_page_event': 'pageshow',
@@ -9081,7 +9088,8 @@ function options_field_widget_form(form, form_state, field, instance, langcode,
               '_theme_taxonomy_term_reference_load_items',
             'jqm_page_event_args': JSON.stringify({
                 'taxonomy_vocabulary': taxonomy_vocabulary,
-                'widget_id': widget_id
+                'widget_id': widget_id,
+                'default_values': items[delta].value
             })
           };
           // Pass the field name so the page event handler can be called for
@@ -9294,10 +9302,11 @@ function image_field_widget_form(form, form_state, field, instance, langcode,
       var path = drupalgap_image_path(items[delta].item.uri);
       // @TODO - show the filesize.
       // @TODO - show the remove button.
-      var html = theme('image', { path: path }) +
-        '<div class="filename">' +
-          l(items[delta].item.filename, path, { InAppBrowser: true }) +
-        '</div>';
+      //@terotic showing image link is a bit inappropriate
+      //var html = theme('image', { path: path }) +
+        //'<div class="filename">' +
+        //  l(items[delta].item.filename, path, { InAppBrowser: true }) +
+        //'</div>';
         /*theme('button_link', {
             text: 'Remove',
             path: null,
@@ -12253,9 +12262,10 @@ function user_profile_form(form, form_state, account) {
     }
 
     // If profile pictures are disabled, remove the core field from the form.
-    if (drupalgap.site_settings.user_pictures == 0) {
+    //@terotic delete anyway as image can not be changed or edited at the moment
+    //if (drupalgap.site_settings.user_pictures == 0) {
       delete form.elements.picture;
-    }
+    //}
 
     // Add password fields to the form. We show the current password field only
     // if the user is editing their account. We show the password and confirm
@@ -12655,9 +12665,12 @@ function taxonomy_assemble_form_state_into_field(entity_type, bundle,
         // @terotic assembles the csv string value into a simple array
         field_key.use_key = false;
         field_key.use_wrapper = false;
-        tid_array = form_state_value.split(',');
-        for(var i=0; i<tid_array.length; i++) { tid_array[i] = +tid_array[i]; } 
-        result = tid_array;
+        if (form_state_value) {
+          tid_array = form_state_value.split(',');
+          for(var i=0; i<tid_array.length; i++) { tid_array[i] = +tid_array[i]; } 
+          result = tid_array;
+        }
+        else { result = [] }
         break;
     }
     return result;
@@ -13217,6 +13230,8 @@ function theme_taxonomy_term_reference(variables) {
  * @param {Object} options
  */
 function _theme_taxonomy_term_reference_load_items(options) {
+  //console.log('TERO theme_load_items loading items in SELECT widget' 
+            // + JSON.stringify(options, null, 4));
   try {
     // Build the index query, then make the call to the server.
     var query = {
@@ -13237,6 +13252,7 @@ function _theme_taxonomy_term_reference_load_items(options) {
 
           // If it's not required, place an empty option on the widget and set
           // it aside.
+          /* @terotic do not add extra options
           if (!options.required) {
             var option = null;
             if (options.exposed) {
@@ -13251,15 +13267,27 @@ function _theme_taxonomy_term_reference_load_items(options) {
             }
             $(widget).append(option);
           }
-
+          */
+          // Set default values //tero
+          
+          //console.log ('+++++ are we getting default values: ' + options.default_values);
+          var defaultvalues = []; //tero
+          if (options.default_values != null) {
+            defaultvalues = options.default_values.split(',');
+          }
+          
           // Place each term in the widget as an option, and set the option
           // aside.
           for (var index in terms) {
               if (!terms.hasOwnProperty(index)) { continue; }
               var term = terms[index];
-              var option = '<option value="' + term.tid + '">' +
+              var selected = ''; //tero
+              //console.log('TERO is this default value '+$.inArray(index, defaultvalues));
+              if ($.inArray(term.tid, defaultvalues)>=0) { selected='selected="selected"' };//tero
+              
+              var option = '<option value="' + term.tid + '" ' + selected +'>' +
                 term.name +
-              '</option>';
+              '</option>';//tero
               $(widget).append(option);
               _taxonomy_term_reference_terms[options.element_id][term.tid] =
                 term.name;
@@ -13267,6 +13295,9 @@ function _theme_taxonomy_term_reference_load_items(options) {
 
           // Refresh the select list.
           $(widget).selectmenu('refresh', true);
+          var valuefield = options.widget_id.replace('-select','');
+          //console.log('-----'+valuefield);
+          _theme_taxonomy_term_reference_onchange(widget,valuefield) ;
         }
     });
   }

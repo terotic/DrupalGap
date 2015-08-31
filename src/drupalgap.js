@@ -625,7 +625,9 @@ function drupalgap_load_locales() {
       }
       var language = drupalgap.settings.locale[language_code];
       var file_path = 'locale/' + language_code + '.json';
-      if (!drupalgap_file_exists(file_path)) { continue; }
+      //@terotic had to remove this as I can not get lang json files
+      //to pass jquery ajax test. Have to just TRUST that the file is there
+      //if (!drupalgap_file_exists(file_path)) { continue; }
       drupalgap.locale[language_code] = drupalgap_file_get_contents(
         file_path,
         { dataType: 'json' }
