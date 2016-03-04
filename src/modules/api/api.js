@@ -185,12 +185,41 @@ function hook_404(router_path) {}
 function hook_entity_post_render_content(entity, entity_type, bundle) {
   try {
     if (entity.type == 'article') {
-      entity.content += '<p>'.t('Example text on every article!')+'</p>';
+      entity.content += '<p>' + t('Example text on every article!') + '</p>';
     }
   }
   catch (error) {
     console.log('hook_entity_post_render_content - ' + error);
   }
+}
+
+/**
+ * Implements hook_entity_view_alter().
+ * Called immediately before a page is rendered and injected into its waiting
+ * container. Use this hook to modifications to the build object by adding or
+ * editing render arrays (widgets) on the build object.
+ */
+function hook_entity_view_alter(entity_type, entity_id, mode, build) {
+  try {
+    if (entity_type == 'user' && mode == 'view') {
+      if (entity_id == Drupal.user.uid) {
+        build['foo'] = { markup: '<p>Extra stuff when viewing own user profile...</p>' };
+        build['volume'] = {
+          theme: 'range',
+          attributes: {
+            min: '0',
+            max: '11',
+            value: '11',
+            'data-theme': 'b'
+          }
+        };
+      }
+      else {
+        build['bar'] = { markup: '<p>Viewing some other profile...</p>' };
+      }
+    }
+  }
+  catch (error) { console.log('hook_entity_view_alter - ' + error); }
 }
 
 /**
@@ -285,7 +314,7 @@ function hook_field_widget_form(form, form_state, field, instance, langcode, ite
 //function hook_form_element_alter(form, element, variables) { }
 
 /**
- * Implements hook_image_path_alter().
+ * Implements hook_entity_post_render_field().
  * Called after drupalgap_entity_render_field() assembles the field content
  * string. Use this to make modifications to the HTML output of the entity's
  * field before it is displayed. The field content will be inside of
@@ -387,6 +416,48 @@ function hook_node_page_view_alter_TYPE(node, options) {
 
   }
   catch (error) { console.log('hook_node_page_view_alter_TYPE() - ' + error); }
+}
+
+/**
+ * Implements hook_page_build().
+ * @param {Object} output The page build output object.
+ */
+function hook_page_build(output) {
+  try {
+    // Remove all titles from article node pages.
+    if (output.node && output.node.type == 'article') {
+      delete output.title;
+    }
+  }
+  catch (error) { console.log('hook_page_build - ' + error); }
+}
+
+/**
+ * Implements hook_preprocess_page().
+ * Take action before the page is processed and shown to the user.
+ * @param {Object} variables The page variables.
+ */
+function hook_preprocess_page(variables) {
+  try {
+
+  }
+  catch (error) {
+    console.log('hook_preprocess_page - ' + error);
+  }
+}
+
+/**
+ * Implements hook_post_process_page().
+ * Take action after the page is processed and shown to the user.
+ * @param {Object} variables The page variables.
+ */
+function hook_post_process_page(variables) {
+  try {
+
+  }
+  catch (error) {
+    console.log('hook_post_process_page - ' + error);
+  }
 }
 
 /**

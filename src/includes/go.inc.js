@@ -102,7 +102,7 @@ function drupalgap_goto(path) {
 
     // Return if we are trying to go to the path we are already on, unless this
     // was a form submission, then we'll let the page rebuild itself. For
-    // accurracy we compare the jQM active page url with the destination page
+    // accuracy we compare the jQM active page url with the destination page
     // id.
     // @todo - this boolean doesn't match the comment description of the code
     // block, i.e. the form_submission check is opposite of what it says
@@ -348,7 +348,8 @@ function _drupalgap_goto_prepare_path(path) {
  */
 function drupalgap_back() {
   try {
-    if ($('.ui-page-active').attr('id') == drupalgap.settings.front) {
+    var active_page_id = $('.ui-page-active').attr('id');
+    if (active_page_id == drupalgap.settings.front) {
       var msg = t('Exit') + ' ' + drupalgap.settings.title + '?';
       if (drupalgap.settings.exit_message) {
         msg = drupalgap.settings.exit_message;
@@ -357,9 +358,10 @@ function drupalgap_back() {
           confirmCallback: _drupalgap_back_exit
       });
     }
+    else if (active_page_id == '_drupalgap_splash') { return; }
     else { _drupalgap_back(); }
   }
-  catch (error) { console.log('drupalgap_back' + error); }
+  catch (error) { console.log('drupalgap_back - ' + error); }
 }
 
 /**
@@ -370,15 +372,23 @@ function _drupalgap_back() {
     // @WARNING - any changes here (except the history.back() call) need to be
     // reflected into the window "navigate" handler below
     drupalgap.back = true;
-    history.back();
+
+    // Properly handle iOS9 back button clicks, and default back button clicks.
+    if (typeof device !== 'undefined' && device.platform === "iOS" && parseInt(device.version) === 9) {
+      $.mobile.back();
+    }
+    else { history.back(); }
+
+    // Update the path and router path.
     drupalgap_path_set(drupalgap.back_path.pop());
     drupalgap_router_path_set(
       drupalgap_get_menu_link_router_path(
         drupalgap_path_get()
       )
     );
+
   }
-  catch (error) { console.log('drupalgap_back' + error); }
+  catch (error) { console.log('_drupalgap_back - ' + error); }
 }
 
 /**
@@ -410,6 +420,7 @@ $(window).on('navigate', function(event, data) {
         // @WARNING - any changes here should be reflected into
         // _drupalgap_back().
         drupalgap.back = true;
+        // Update the path and router path.
         drupalgap_path_set(drupalgap.back_path[drupalgap.back_path.length - 1]);
         drupalgap_router_path_set(
           drupalgap_get_menu_link_router_path(

@@ -121,10 +121,31 @@ function _drupalgap_form_render_elements(form) {
                 form.bundle.indexOf('comment_node_') != -1
               ) { bundle = form.bundle.replace('comment_node_', ''); }
             }
-            // This is not a field, if it has a weight in
-            // field_info_extra_fields use it, otherwise just append it to the
-            // content.
-            if (
+
+            // This is not a field, if it has it's own weight use it, or see if
+            // there is a weight in field_info_extra_fields, otherwise just
+            // append it to the element content.
+
+            // Elements with a weight defined.
+            if (typeof element.weight !== 'undefined') {
+              if (content_weighted[element.weight]) {
+                var msg = 'WARNING: _drupalgap_form_render_elements - the ' +
+                'weight of ' + element.weight + ' for ' + element.name +
+                ' is already in use by ' +
+                content_weighted[element.weight].name;
+                console.log(msg);
+                // Just render it.
+                var _content = _drupalgap_form_render_element(form, element);
+                if (typeof _content !== 'undefined') { content += _content; }
+              }
+              else {
+                content_weighted[element.weight] =
+                  _drupalgap_form_render_element(form, element);
+              }
+            }
+
+            // Extra fields.
+            else if (
               form.entity_type && bundle &&
               typeof drupalgap.field_info_extra_fields[bundle][name] !==
                 'undefined' &&
@@ -134,13 +155,27 @@ function _drupalgap_form_render_elements(form) {
             ) {
               var weight =
                 drupalgap.field_info_extra_fields[bundle][name].weight;
-              content_weighted[weight] =
-              _drupalgap_form_render_element(form, element);
+              if (content_weighted[weight]) {
+                var msg = 'WARNING: _drupalgap_form_render_elements - the ' + 
+                'weight of ' + weight + ' for ' + element.name + ' is ' +
+                'already in use by ' + content_weighted[weight].name;
+                console.log(msg);
+                // Just render it.
+                var _content = _drupalgap_form_render_element(form, element);
+                if (typeof _content !== 'undefined') { content += _content; }
+              }
+              else {
+                content_weighted[weight] =
+                  _drupalgap_form_render_element(form, element);
+              }
             }
+
+            // No weight, just render it.
             else {
               var _content = _drupalgap_form_render_element(form, element);
               if (typeof _content !== 'undefined') { content += _content; }
             }
+
           }
         }
     }
@@ -268,6 +303,7 @@ function _drupalgap_form_render_element(form, element) {
     for (var delta in items) {
         if (!items.hasOwnProperty(delta)) { continue; }
         var item = items[delta];
+
         // We'll render the item, unless we prove otherwise.
         render_item = true;
 
@@ -344,13 +380,17 @@ function _drupalgap_form_render_element(form, element) {
           );
         }
 
-        // Render the element item, unless it wasn't supported.
-        item_html = _drupalgap_form_render_element_item(
+        // Render the element item, unless it wasn't supported. Before rendering, clear out any default values so they
+        // aren't stale for the next delta item.
+        item_html += _drupalgap_form_render_element_item(
           form,
           element,
           variables,
           item
         );
+        if (typeof variables.default_value !== 'undefined') { delete variables.default_value; }
+        if (typeof variables.default_value_label !== 'undefined') { delete variables.default_value_label; }
+        if (typeof variables.value !== 'undefined') { delete variables.value; }
         if (typeof item_html === 'undefined') {
           render_item = false;
           break;
@@ -422,7 +462,7 @@ function _drupalgap_form_render_element(form, element) {
 
     // Add element description.
     if (element.description && element.type != 'hidden') {
-      html += '<div>' + t(element.description) + '</div>';
+      html += '<div class="description">' + t(element.description) + '</div>';
     }
 
     // Close the element container.
